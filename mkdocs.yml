@@ -1,10 +1,10 @@
 site_name: CINEI Documentation
 site_description: Coupled and Integrated Emission Inventory for China
 site_author: Yijuan Zhang
-site_url: https://luyikeka.github.io/claude_cinei/
+site_url: https://luyikeka.github.io/cinei/
 
-repo_name: Luyikeka/claude_cinei
-repo_url: https://github.com/Luyikeka/claude_cinei
+repo_name: Luyikeka/cinei
+repo_url: https://github.com/Luyikeka/cinei
 
 theme:
   name: material
@@ -71,6 +71,6 @@ markdown_extensions:
 extra:
   social:
     - icon: fontawesome/brands/github
-      link: https://github.com/Luyikeka/claude_cinei
+      link: https://github.com/Luyikeka/cinei
     - icon: fontawesome/solid/envelope
       link: mailto:yijuancham@gmail.com
