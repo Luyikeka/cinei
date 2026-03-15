@@ -11,6 +11,12 @@ from .download import (
     download_edgar_monthly,
     download_htap_monthly,
 )
+from .preprocess import (
+    check_user_data,
+    standardize_netcdf,
+    txt_to_netcdf,
+    show_cinei_standard,
+)
 
 __all__ = [
     "emis_union", "ll_area", "plot_emission_map",
@@ -19,7 +25,8 @@ __all__ = [
     "list_meic_filenames", "check_meic_files",
     "download_htap", "list_htap_files",
     "download_edgar", "list_edgar_species",
-    "download_edgar_monthly",
-    "download_htap_monthly",
+    "download_edgar_monthly", "download_htap_monthly",
+    "check_user_data", "standardize_netcdf",
+    "txt_to_netcdf", "show_cinei_standard",
     "__version__",
 ]
