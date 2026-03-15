@@ -11,7 +11,7 @@
 
 ## Overview
 
-**CINEI** is a Python package for integrating anthropogenic emission inventories for China, combining global (CEDS) and regional (MEIC) datasets into a unified temporal and spatial resolution NetCDF product.
+**CINEI** is a Python package for integrating anthropogenic emission inventories, combining global (e.g. CEDS) and regional (e.g. MEIC for China) datasets into a unified temporal and spatial resolution NetCDF product.
 
 ## Installation
 ```bash
