@@ -48,6 +48,7 @@ nav:
     - MEIC: guide/download_meic.md
     - HTAP: guide/download_htap.md
     - EDGAR: guide/download_edgar.md
+  - Preprocessing: guide/preprocess.md
   - Tutorial:
     - Basic Workflow: tutorial/basic_workflow.md
   - API Reference:
@@ -55,6 +56,7 @@ nav:
     - download: api/download.md
     - utils: api/utils.md
     - visualization: api/visualization.md
+    - preprocess: api/preprocess.md
 
 markdown_extensions:
   - admonition
