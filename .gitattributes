@@ -1,0 +1,4 @@
+# Tell GitHub to ignore generated documentation files for language stats
+docs/site/** linguist-generated=true
+site/** linguist-generated=true
+*.html linguist-documentation=true
