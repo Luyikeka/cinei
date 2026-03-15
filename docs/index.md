@@ -3,16 +3,24 @@
 [![PyPI version](https://badge.fury.io/py/cinei.svg)](https://badge.fury.io/py/cinei)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15000795.svg)](https://doi.org/10.5281/zenodo.15000795)
+[![Documentation](https://img.shields.io/badge/docs-luyikeka.github.io/cinei-blueviolet)](https://luyikeka.github.io/cinei/)
 
-**CINEI** is a Python package for integrating anthropogenic emission inventories for China,
-combining global (CEDS) and regional (MEIC) datasets into a unified 0.25° monthly NetCDF product.
+**CINEI** is a Python package for integrating anthropogenic emission inventories,
+combining global (e.g. CEDS) and regional (e.g. MEIC for China) datasets into a
+unified temporal and spatial resolution NetCDF product.
 
-## Key Features
+## Quick Install
+```bash
+pip install cinei
+```
 
-- 🔗 **Integrate** CEDS (global 0.5°) + MEIC (China 0.25°) emission inventories
-- 📥 **Download** CEDS, HTAP, EDGAR data directly from public repositories
+## Key Functions
+
+- 📥 **Download** CEDS, MEIC, HTAP, EDGAR data directly from public repositories
+- 🔗 **Integrate** global and regional emission inventories into unified NetCDF
+- 🛠️ **Preprocess** user-provided data into CINEI-compatible format
 - 🗺️ **Visualize** emission maps with publication-quality matplotlib figures
-- 🛠️ **Grid utilities** for latitude-longitude area calculations
+- 📐 **Grid utilities** for latitude-longitude area calculations
 
 ## Supported Inventories
 
@@ -22,11 +30,6 @@ combining global (CEDS) and regional (MEIC) datasets into a unified 0.25° month
 | MEIC | v1.4 | 0.25° | China, monthly |
 | HTAP | v3 | 0.1° / 0.5° | Global, 2000–2018 |
 | EDGAR | v8.1 | 0.1° | Global, 1970–2022 |
-
-## Quick Install
-```bash
-pip install cinei
-```
 
 ## Citation
 ```

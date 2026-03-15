@@ -10,14 +10,14 @@ theme:
   name: material
   palette:
     - scheme: default
-      primary: teal
-      accent: cyan
+      primary: deep purple
+      accent: purple
       toggle:
         icon: material/brightness-7
         name: Switch to dark mode
     - scheme: slate
-      primary: teal
-      accent: cyan
+      primary: deep purple
+      accent: purple
       toggle:
         icon: material/brightness-4
         name: Switch to light mode
