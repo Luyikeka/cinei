@@ -8,6 +8,8 @@ from .download import (
     list_meic_filenames, check_meic_files,
     download_htap, list_htap_files,
     download_edgar, list_edgar_species,
+    download_edgar_monthly,
+    download_htap_monthly,
 )
 
 __all__ = [
@@ -17,5 +19,7 @@ __all__ = [
     "list_meic_filenames", "check_meic_files",
     "download_htap", "list_htap_files",
     "download_edgar", "list_edgar_species",
+    "download_edgar_monthly",
+    "download_htap_monthly",
     "__version__",
 ]

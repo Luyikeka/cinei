@@ -1138,3 +1138,306 @@ def _normalize_edgar_species(species_list):
             f"        Call cinei.list_edgar_species() to see all options."
         )
     return normalized
+
+
+# ── Month utilities ───────────────────────────────────────────────────────────
+MONTH_NAMES = {
+    1: "Jan", 2: "Feb",  3: "Mar",  4: "Apr",
+    5: "May", 6: "Jun",  7: "Jul",  8: "Aug",
+    9: "Sep", 10: "Oct", 11: "Nov", 12: "Dec",
+}
+
+
+def download_edgar_monthly(save_dir, species, year, month,
+                           data_type="fluxes", keep_annual=False):
+    """
+    Download EDGAR v8.1 data and extract a specific month.
+
+    Downloads the annual NetCDF file (if not already present),
+    then extracts the requested month as a standalone [lat, lon] file.
+
+    Parameters
+    ----------
+    save_dir : str
+        Directory to save files.
+    species : list of str
+        Species to download, e.g. ['NOx', 'SO2']. Case-insensitive.
+    year : int
+        Target year, e.g. 2017. Range: 1970-2022.
+    month : int
+        Target month (1-12), e.g. 1 for January.
+    data_type : str, optional
+        'fluxes' (kg/m²/s, default) or 'emissions' (Mg/month).
+    keep_annual : bool, optional
+        If True, keep the full annual NetCDF after extraction.
+        Default False (saves disk space).
+
+    Returns
+    -------
+    list of str
+        Paths to extracted monthly NetCDF files.
+
+    Examples
+    --------
+    >>> import cinei
+    >>> # Download NOx and SO2 for January 2017
+    >>> cinei.download_edgar_monthly(
+    ...     save_dir='/work/bb1554/data/EDGAR',
+    ...     species=['NOx', 'SO2'],
+    ...     year=2017,
+    ...     month=1
+    ... )
+    """
+    import xarray as xr
+
+    save_dir = Path(save_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    # ── Validate month ─────────────────────────────────────────────────
+    if month not in range(1, 13):
+        raise ValueError(
+            f"[CINEI] Invalid month: {month}. Must be 1-12."
+        )
+
+    sp_keys   = _normalize_edgar_species(species)
+    type_info = EDGAR_REGISTRY["types"][data_type]
+    mon_name  = MONTH_NAMES[month]
+    mon_idx   = month - 1   # 0-based index for xarray
+
+    print(f"[CINEI] EDGAR v8.1 Monthly Extract")
+    print(f"[CINEI] Year    : {year}")
+    print(f"[CINEI] Month   : {month:02d} ({mon_name})")
+    print(f"[CINEI] Species : {[EDGAR_REGISTRY['species_filename'][k] for k in sp_keys]}")
+    print(f"[CINEI] Type    : {data_type}")
+    print()
+
+    extracted = []
+    for sp_key in sp_keys:
+        sp_str = EDGAR_REGISTRY["species_filename"][sp_key]
+
+        # ── Step 1: Download annual zip if needed ──────────────────────
+        zip_name = (
+            f"v8.1_FT2022_AP_{sp_str}_{year}"
+            f"_TOTALS_{type_info['suffix']}.zip"
+        )
+        zip_path    = save_dir / zip_name
+        annual_dir  = save_dir / zip_name.replace(".zip", "")
+
+        # Check if annual NetCDF already exists
+        nc_files = list(annual_dir.glob("*.nc")) if annual_dir.exists() else []
+
+        if not nc_files:
+            print(f"[CINEI] → Downloading annual file for {sp_str} {year}...")
+            url = (
+                f"{EDGAR_REGISTRY['base_url']}/"
+                f"{EDGAR_REGISTRY['dataset']}/"
+                f"{sp_str}/TOTALS/{type_info['folder']}/{zip_name}"
+            )
+            _download_with_resume(url, zip_path)
+
+            import zipfile
+            annual_dir.mkdir(exist_ok=True)
+            with zipfile.ZipFile(zip_path, "r") as z:
+                z.extractall(annual_dir)
+            os.remove(zip_path)
+            nc_files = list(annual_dir.glob("*.nc"))
+            print(f"[CINEI]   📂 Extracted: {annual_dir.name}/")
+        else:
+            print(f"[CINEI] → Annual file already exists: {annual_dir.name}/")
+
+        if not nc_files:
+            raise FileNotFoundError(
+                f"[CINEI] No NetCDF found in {annual_dir}"
+            )
+
+        nc_path = nc_files[0]
+
+        # ── Step 2: Extract month ──────────────────────────────────────
+        print(f"[CINEI]   📅 Extracting month {month:02d} ({mon_name})...")
+        ds = xr.open_dataset(nc_path)
+
+        # Find time dimension (could be 'time', 'month', or integer index)
+        time_dims = [d for d in ds.dims if d in ("time", "month", "months")]
+        if time_dims:
+            ds_mon = ds.isel({time_dims[0]: mon_idx})
+        else:
+            # Try first dimension if unnamed
+            first_dim = list(ds.dims)[0]
+            ds_mon = ds.isel({first_dim: mon_idx})
+
+        ds_mon.attrs["month"]   = month
+        ds_mon.attrs["month_name"] = mon_name
+        ds_mon.attrs["year"]    = year
+        ds_mon.attrs["source"]  = f"EDGAR v8.1 {sp_str} {year}-{month:02d}"
+
+        # ── Step 3: Save monthly file ──────────────────────────────────
+        out_name = (
+            f"EDGAR_v8.1_{sp_str}_{year}_{month:02d}_{mon_name}"
+            f"_{data_type}.nc"
+        )
+        out_path = save_dir / out_name
+        ds_mon.to_netcdf(out_path)
+        print(f"[CINEI]   ✅ Saved: {out_name}")
+        extracted.append(str(out_path))
+
+        # ── Step 4: Optionally remove annual file ──────────────────────
+        if not keep_annual and annual_dir.exists():
+            import shutil
+            shutil.rmtree(annual_dir)
+            print(f"[CINEI]   🗑️  Removed annual dir: {annual_dir.name}/")
+
+        ds.close()
+
+    print(f"\n[CINEI] ✅ Done! {len(extracted)} monthly file(s) saved.")
+    return extracted
+
+
+def download_htap_monthly(save_dir, species, year, month,
+                          resolution="05x05", data_type="emissions",
+                          keep_annual=False):
+    """
+    Download HTAP v3 data and extract a specific month.
+
+    Parameters
+    ----------
+    save_dir : str
+        Directory to save files.
+    species : list of str
+        Species to download, e.g. ['NOx', 'SO2']. Case-insensitive.
+    year : int
+        Target year. HTAP coverage: 2000-2018.
+    month : int
+        Target month (1-12).
+    resolution : str, optional
+        '05x05' (default) or '01x01'.
+    data_type : str, optional
+        'emissions' (Mg/month, default) or 'fluxes' (kg/m²/s).
+    keep_annual : bool, optional
+        If True, keep the full annual NetCDF. Default False.
+
+    Returns
+    -------
+    list of str
+        Paths to extracted monthly NetCDF files.
+
+    Examples
+    --------
+    >>> import cinei
+    >>> cinei.download_htap_monthly(
+    ...     save_dir='/work/bb1554/data/HTAP',
+    ...     species=['NOx', 'SO2'],
+    ...     year=2017,
+    ...     month=7   # July
+    ... )
+    """
+    import xarray as xr
+
+    save_dir = Path(save_dir)
+    save_dir.mkdir(parents=True, exist_ok=True)
+
+    if month not in range(1, 13):
+        raise ValueError(f"[CINEI] Invalid month: {month}. Must be 1-12.")
+
+    if not (2000 <= year <= 2018):
+        raise ValueError(
+            f"[CINEI] Invalid year: {year}. HTAP coverage: 2000-2018."
+        )
+
+    sp_keys  = _normalize_htap_species(species)
+    mon_name = MONTH_NAMES[month]
+    mon_idx  = month - 1
+
+    print(f"[CINEI] HTAP v3 Monthly Extract")
+    print(f"[CINEI] Year       : {year}")
+    print(f"[CINEI] Month      : {month:02d} ({mon_name})")
+    print(f"[CINEI] Resolution : {resolution}")
+    print(f"[CINEI] Species    : "
+          f"{[HTAP_SPECIES_FILENAME[k] for k in sp_keys]}")
+    print()
+
+    extracted = []
+    for sp_key in sp_keys:
+        sp_str   = HTAP_SPECIES_FILENAME[sp_key]
+        zip_name = f"gridmaps_{resolution}_{data_type}_{sp_str}.zip"
+        zip_path = save_dir / zip_name
+        ann_dir  = save_dir / zip_name.replace(".zip", "")
+        # ── Download big zip, extract year zip, extract nc ───────────
+        import zipfile, shutil
+        year_nc = ann_dir / f"edgar_HTAPv3_{year}_{sp_str}.nc"
+
+        if not year_nc.exists():
+            if ann_dir.exists() and not any(ann_dir.iterdir()):
+                shutil.rmtree(ann_dir)
+            ann_dir.mkdir(parents=True, exist_ok=True)
+
+            # Step 1: Download big zip if not present
+            if not zip_path.exists():
+                print(f"[CINEI] → Downloading {sp_str} ({resolution})...")
+                url = (
+                    f"https://zenodo.org/records/7516361/files/"
+                    f"{zip_name}?download=1"
+                )
+                _download_with_resume(url, zip_path)
+            else:
+                print(f"[CINEI] → Using existing zip: {zip_name}")
+
+            # Step 2: Extract year-specific zip from monthly/ folder
+            year_zip_name = f"monthly/edgar_HTAPv3_{year}_{sp_str}.zip"
+            print(f"[CINEI]   📦 Extracting {year_zip_name}...")
+            with zipfile.ZipFile(zip_path, "r") as z:
+                if year_zip_name not in z.namelist():
+                    raise FileNotFoundError(
+                        f"[CINEI] {year_zip_name} not found.\n"
+                        f"        Available years: 2000-2018"
+                    )
+                z.extract(year_zip_name, ann_dir)
+
+            # Step 3: Extract nc from year zip
+            year_zip_path = ann_dir / "monthly" / f"edgar_HTAPv3_{year}_{sp_str}.zip"
+            with zipfile.ZipFile(year_zip_path, "r") as z:
+                nc_members = [m for m in z.namelist() if m.endswith(".nc")]
+                for m in nc_members:
+                    z.extract(m, ann_dir)
+            year_zip_path.unlink()
+
+            # Step 4: Remove big zip to save space
+            os.remove(zip_path)
+            print(f"[CINEI]   ✅ Extracted: {year_nc.name}")
+        else:
+            print(f"[CINEI] → Already extracted: {year_nc.name}")
+
+        nc_path = year_nc
+
+        # ── Extract month ──────────────────────────────────────────────
+        print(f"[CINEI]   📅 Extracting month {month:02d} ({mon_name})...")
+        ds = xr.open_dataset(nc_path)
+
+        time_dims = [d for d in ds.dims if d in ("time", "month", "months")]
+        if time_dims:
+            ds_mon = ds.isel({time_dims[0]: mon_idx})
+        else:
+            ds_mon = ds.isel({list(ds.dims)[0]: mon_idx})
+
+        ds_mon.attrs["month"]      = month
+        ds_mon.attrs["month_name"] = mon_name
+        ds_mon.attrs["year"]       = year
+        ds_mon.attrs["source"]     = f"HTAP v3 {sp_str} {year}-{month:02d}"
+
+        out_name = (
+            f"HTAP_v3_{sp_str}_{resolution}_{year}_{month:02d}"
+            f"_{mon_name}_{data_type}.nc"
+        )
+        out_path = save_dir / out_name
+        ds_mon.to_netcdf(out_path)
+        print(f"[CINEI]   ✅ Saved: {out_name}")
+        extracted.append(str(out_path))
+
+        if not keep_annual and ann_dir.exists():
+            import shutil
+            shutil.rmtree(ann_dir)
+            print(f"[CINEI]   🗑️  Removed annual dir: {ann_dir.name}/")
+
+        ds.close()
+
+    print(f"\n[CINEI] ✅ Done! {len(extracted)} monthly file(s) saved.")
+    return extracted
