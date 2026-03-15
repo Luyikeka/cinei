@@ -1,78 +1,58 @@
-# CINEI - Coupled and Integrated Emission Inventory
+# CINEI — Coupled and Integrated Emission Inventory
 
-[![PyPI version](https://badge.fury.io/py/cinei.svg)](https://pypi.org/project/cinei/)
-[![Python 3.8+](https://img.shields.io/badge/python-3.8+-blue.svg)](https://www.python.org/)
-[![License: MIT](https://img.shields.io/badge/License-MIT-green.svg)](https://opensource.org/licenses/MIT)
+[![PyPI version](https://badge.fury.io/py/cinei.svg)](https://badge.fury.io/py/cinei)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15000795.svg)](https://doi.org/10.5281/zenodo.15000795)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
+[![Documentation](https://img.shields.io/badge/docs-luyikeka.github.io/cinei-blue)](https://luyikeka.github.io/cinei/)
 
-A Python package for integrating global and regional anthropogenic emission inventories (CEDS + MEIC) for atmospheric chemistry research.
+📖 **Full documentation: [https://luyikeka.github.io/cinei/](https://luyikeka.github.io/cinei/)**
+
+---
+
+## Overview
+
+**CINEI** is a Python package for integrating anthropogenic emission inventories for China, combining global (CEDS) and regional (MEIC) datasets into a unified temporal and spatial resolution NetCDF product.
 
 ## Installation
 ```bash
 pip install cinei
 ```
 
-On HPC systems (e.g. DKRZ Levante):
-```bash
-pip install cinei --user
-```
-
 ## Quick Start
 ```python
 import cinei
 
-# Integrate CEDS and MEIC emissions
+# Download CEDS CO data
+cinei.download_ceds(save_dir='/data/CEDS', species=['CO'])
+
+# Download EDGAR NOx for 2017
+cinei.download_edgar(save_dir='/data/EDGAR', species=['NOx'], years=[2017])
+
+# Run emission integration
 cinei.emis_union(
-    ceds_dir='/path/to/ceds',
-    meic_dir='/path/to/meic',
-    save_dir='/path/to/output',
-    spec_ceds='SO2',
-    spec_meic='SO2',
-    mon='Jan',
-    mon_id=0,
-    mon_agg='01',
-    year='2017'
+    ceds_dir='/data/CEDS',
+    meic_dir='/data/MEIC/2017',
+    save_dir='/data/output',
+    spec_ceds='NOx', spec_meic='NOx',
+    mon='Jan', mon_id=0, mon_agg='01', year='2017',
+    mapper_path='/data/Integrated_mapper.csv',
+    country_shp='/data/shapefiles/country.shp',
+    province_shp='/data/shapefiles/province.shp',
+    agg_dir='/data/agg_sectors'
 )
-
-# Visualize emission map
-cinei.plot_emission_map('/path/to/output/file.nc', variable='sum')
-
-# Calculate grid cell area
-import numpy as np
-lat = np.arange(10, 60, 0.25)
-area = cinei.ll_area(lat, 0.25)
 ```
 
-## Functions
+## Documentation
 
-| Function | Description |
-|----------|-------------|
-| `emis_union()` | Integrate CEDS and MEIC emission inventories |
-| `ll_area()` | Calculate grid cell area from latitude and resolution |
-| `plot_emission_map()` | Visualize emission data from NetCDF files |
+Full documentation including installation guide, API reference, data download guide,
+and tutorials is available at:
 
-## Dependencies
-
-- numpy, pandas, xarray, rioxarray
-- geopandas, shapely, matplotlib
-- netcdf4, rasterio
+**[https://luyikeka.github.io/cinei/](https://luyikeka.github.io/cinei/)**
 
 ## Citation
-
-If you use CINEI in your research, please cite:
-
-> Zhang, Y.: CINEI V1.1: Python code for creating an integrated inventory
-> of anthropogenic emission for China, https://doi.org/10.5281/zenodo.15000795, 2025.
-
-## Acknowledgements
-
-This work used resources of the Deutsches Klimarechenzentrum (DKRZ)
-granted by its Scientific Steering Committee (WLA) under project ID **bb1554**.
-
-## Author
-
-**Yijuan Zhang**
-Institute of Environmental Physics (IUP), University of Bremen
-/ Max Planck Institute for Meteorology
+```
+Zhang, Y.: CINEI V1.1, https://doi.org/10.5281/zenodo.15000795, 2025.
+```
 
 ## License
 
