@@ -8,13 +8,17 @@ import geopandas as gpd
 import fnmatch
 import os
 from pathlib import Path
-from .utils import ll_area
+from .utils import ll_area, get_mapper_path, get_country_shp, get_province_shp
 from .regridding import regrid_aggregation, SUPPORTED_RESOLUTIONS
-from .utils import get_mapper_path, get_country_shp, get_province_shp
-from .utils import get_mapper_path, get_country_shp, get_province_shp
+from .preprocess import check_user_data, standardize_netcdf
+from .regions import get_region_bbox, check_data_coverage, list_regions
 
 
-# ── Month lookup tables ───────────────────────────────────────────────────────
+# ── Supported inventory sources ───────────────────────────────────────────────
+SUPPORTED_OUTER = ['CEDS', 'EDGAR', 'HTAP', 'user']
+SUPPORTED_INNER = ['MEIC', 'user', 'EDGAR', 'HTAP']
+
+# ── Month lookup ──────────────────────────────────────────────────────────────
 _MONTH_NAME = {
     1: "Jan", 2: "Feb",  3: "Mar",  4: "Apr",
     5: "May", 6: "Jun",  7: "Jul",  8: "Aug",
@@ -22,15 +26,25 @@ _MONTH_NAME = {
 }
 _MONTH_STR = {m: f"{m:02d}" for m in range(1, 13)}
 
+# ── CEDS file pattern ─────────────────────────────────────────────────────────
+# {outer_dir}/CEDS_Glb_0.5x0.5_anthro_{ceds_spec}__monthly_{year}.nc
+_CEDS_PATTERN = "CEDS_Glb_0.5x0.5_anthro_{spec}__monthly_{year}.nc"
+_CEDS_BC_FILE = "CEDS_Glb_0.5x0.5_anthro_BC__monthly_2016.nc"
+
 
 def emis_union(species, month, year,
                outer_dir, inner_dir, save_dir,
-               mapper_path=None, country_shp=None, province_shp=None,
+               outer_source='CEDS',
+               inner_source='MEIC',
                agg_dir=None,
+               mapper_path=None,
+               country_shp=None,
+               province_shp=None,
                output_res=0.25,
+               region=None,
                global_domain=False,
-               lon_min=70.0, lon_max=150.0,
-               lat_min=10.0, lat_max=60.0):
+               lon_min=None, lon_max=None,
+               lat_min=None, lat_max=None):
     """
     Integrate emissions from outer (global background) and inner
     (regional) inventories onto a unified output grid.
@@ -38,49 +52,53 @@ def emis_union(species, month, year,
     Parameters
     ----------
     species : str
-        Species name. Case-insensitive. Auto-mapped to outer/inner
-        inventory naming via mapper_path.
+        Species name. Case-insensitive. Auto-mapped via mapper.
         e.g. 'SO2', 'NOx', 'CO', 'BC', 'PM2.5'
     month : int
-        Month as integer 1-12 (e.g. 1 for January).
-        Auto-converts to month name, index, and string internally.
+        Month as integer 1-12. Auto-converts to all required formats.
     year : str or int
-        Target year (e.g. '2017' or 2017).
+        Target year (e.g. 2017).
     outer_dir : str
-        Directory for outer (global background) inventory NetCDF files.
-        Currently supports CEDS format.
-        Pattern: CEDS_Glb_0.5x0.5_anthro_{spec}__monthly_{year}.nc
+        Directory for outer (global background) inventory files.
     inner_dir : str
-        Directory for inner (regional) inventory NetCDF files.
-        Currently supports MEIC format.
-        Pattern: {year}_{month:02d}_{sector}_{spec}.nc
+        Directory for inner (regional) inventory files.
     save_dir : str
-        Directory to save integrated output NetCDF files.
-    mapper_path : str
-        Path to Integrated_mapper.csv.
-        Maps species names across inventories and provides unit conversion.
-    country_shp : str
-        Path to world country shapefile (must have 'CNTRY_NAME' column).
-    province_shp : str
-        Path to China province shapefile (must have '行政区划_c' column).
+        Directory to save output NetCDF files.
+    outer_source : str, optional
+        Outer inventory type. Options: 'CEDS', 'EDGAR', 'HTAP', 'user'.
+        Default: 'CEDS'.
+        - 'CEDS'  : CEDS v_2021_04_21 format
+        - 'EDGAR' : EDGAR v8.1 format
+        - 'HTAP'  : HTAP v3 format
+        - 'user'  : user-provided data (auto-checked and standardized)
+    inner_source : str, optional
+        Inner inventory type. Options: 'MEIC', 'user', 'EDGAR', 'HTAP'.
+        Default: 'MEIC'.
     agg_dir : str, optional
-        Directory containing HTAP NetCDF files for automatic regridding
-        of aggregated sectors (waste, shipping, aviation).
-        Pattern: edgar_HTAPv3_{year}_{spec}.nc
-        If None, aggregated sectors are set to zero (with warning).
+        Directory for aggregated sector files (HTAP for waste/shipping/aviation).
+        If None, these sectors are set to zero with a warning.
+    mapper_path : str, optional
+        Path to Integrated_mapper.csv.
+        Default: bundled cinei/data/Integrated_mapper.csv.
+    country_shp : str, optional
+        Path to country shapefile.
+        Default: bundled cinei/data/country.shp.
+    province_shp : str, optional
+        Path to province shapefile.
+        Default: bundled cinei/data/分省.shp.
     output_res : float, optional
-        Output grid resolution in degrees.
-        Options: 0.05, 0.1, 0.25, 0.5. Default: 0.25.
+        Output resolution in degrees. Options: 0.05, 0.1, 0.25, 0.5.
+        Default: 0.25.
+    region : str, optional
+        Region name for automatic bbox lookup.
+        e.g. 'China', 'Beijing', 'NCP', 'Germany', 'India'.
+        Call cinei.list_regions() to see all presets.
     global_domain : bool, optional
-        If True, use global extent (-180 to 180, -90 to 90).
-        If False, use regional extent defined by lon/lat min/max.
-        Default: False.
-    lon_min, lon_max : float, optional
-        Longitude range for regional domain. Default: 70.0, 150.0.
-        Ignored when global_domain=True.
-    lat_min, lat_max : float, optional
-        Latitude range for regional domain. Default: 10.0, 60.0.
-        Ignored when global_domain=True.
+        If True, use global extent. Default False.
+    lon_min, lon_max, lat_min, lat_max : float, optional
+        Manual bounding box. Used when region is None and
+        global_domain is False.
+        Default: China domain (70-150E, 10-60N).
 
     Returns
     -------
@@ -91,86 +109,103 @@ def emis_union(species, month, year,
     --------
     >>> import cinei
 
-    >>> # Minimal call — China domain, 0.25°
-    >>> output = cinei.emis_union(
-    ...     species='SO2',
-    ...     month=1,
-    ...     year='2017',
-    ...     outer_dir='/work/bb1554/data/CEDS',
-    ...     inner_dir='/work/bb1554/data/MEIC/2017',
-    ...     save_dir='/work/bb1554/output/cinei',
-    ...     mapper_path='/work/bb1554/data/Integrated_mapper.csv',
-    ...     country_shp='/work/bb1554/data/shapefiles/country.shp',
-    ...     province_shp='/work/bb1554/data/shapefiles/province.shp',
-    ...     agg_dir='/work/bb1554/data/HTAP',
+    >>> # Minimal — China, CEDS outer, MEIC inner, 0.25°
+    >>> cinei.emis_union(
+    ...     species='SO2', month=1, year=2017,
+    ...     outer_dir='/data/CEDS',
+    ...     inner_dir='/data/MEIC/2017',
+    ...     save_dir='/data/output',
+    ...     agg_dir='/data/HTAP',
     ... )
 
-    >>> # Custom region at 0.1°
-    >>> output = cinei.emis_union(
-    ...     species='NOx', month=7, year='2017',
-    ...     outer_dir=..., inner_dir=..., save_dir=...,
-    ...     mapper_path=..., country_shp=..., province_shp=...,
-    ...     agg_dir=...,
+    >>> # EDGAR as outer inventory
+    >>> cinei.emis_union(
+    ...     species='NOx', month=7, year=2017,
+    ...     outer_source='EDGAR',
+    ...     outer_dir='/data/EDGAR',
+    ...     inner_dir='/data/MEIC/2017',
+    ...     save_dir='/data/output',
+    ... )
+
+    >>> # User-provided outer data (auto-checked/standardized)
+    >>> cinei.emis_union(
+    ...     species='SO2', month=1, year=2017,
+    ...     outer_source='user',
+    ...     outer_dir='/data/my_inventory',
+    ...     inner_dir='/data/MEIC/2017',
+    ...     save_dir='/data/output',
+    ... )
+
+    >>> # Region by name
+    >>> cinei.emis_union(
+    ...     species='SO2', month=1, year=2017,
+    ...     outer_dir='/data/CEDS',
+    ...     inner_dir='/data/MEIC/2017',
+    ...     save_dir='/data/output',
+    ...     region='Beijing',
+    ... )
+
+    >>> # Custom resolution
+    >>> cinei.emis_union(
+    ...     species='CO', month=3, year=2017,
+    ...     outer_dir='/data/CEDS',
+    ...     inner_dir='/data/MEIC/2017',
+    ...     save_dir='/data/output',
     ...     output_res=0.1,
-    ...     global_domain=False,
-    ...     lon_min=100.0, lon_max=130.0,
-    ...     lat_min=20.0,  lat_max=45.0,
-    ... )
-
-    >>> # Global domain at 0.5°
-    >>> output = cinei.emis_union(
-    ...     species='CO', month=3, year='2017',
-    ...     outer_dir=..., inner_dir=..., save_dir=...,
-    ...     mapper_path=..., country_shp=..., province_shp=...,
-    ...     output_res=0.5,
-    ...     global_domain=True,
+    ...     region='NCP',
     ... )
     """
     year = str(year)
 
-    # ── Auto-resolve bundled data files ──────────────────────────────
-    if mapper_path is None:
-        mapper_path = get_mapper_path()
-        print(f"[CINEI] mapper_path : using bundled default")
-    if country_shp is None:
-        country_shp = get_country_shp()
-        print(f"[CINEI] country_shp : using bundled default")
-    if province_shp is None:
-        province_shp = get_province_shp()
-        print(f"[CINEI] province_shp: using bundled default")
+    # ── Auto-resolve bundled data ─────────────────────────────────────
+    if mapper_path  is None: mapper_path  = get_mapper_path()
+    if country_shp  is None: country_shp  = get_country_shp()
+    if province_shp is None: province_shp = get_province_shp()
 
-    # ── Auto-convert month ────────────────────────────────────────────
-    if month not in range(1, 13):
+    # ── Validate sources ──────────────────────────────────────────────
+    if outer_source not in SUPPORTED_OUTER:
         raise ValueError(
-            f"[CINEI] Invalid month: {month}. Must be integer 1-12."
+            f"[CINEI] Invalid outer_source: '{outer_source}'\n"
+            f"        Available: {SUPPORTED_OUTER}"
         )
-    mon_name = _MONTH_NAME[month]   # e.g. 'Jan'
-    mon_id   = month - 1            # 0-based index for xarray isel
-    mon_str  = _MONTH_STR[month]    # e.g. '01'
+    if inner_source not in SUPPORTED_INNER:
+        raise ValueError(
+            f"[CINEI] Invalid inner_source: '{inner_source}'\n"
+            f"        Available: {SUPPORTED_INNER}"
+        )
 
     # ── Validate resolution ───────────────────────────────────────────
     if output_res not in SUPPORTED_RESOLUTIONS:
         raise ValueError(
-            f"[CINEI] Unsupported output_res: {output_res}\n"
+            f"[CINEI] Invalid output_res: {output_res}\n"
             f"        Available: {SUPPORTED_RESOLUTIONS}"
         )
 
-    # ── Set domain ────────────────────────────────────────────────────
-    if global_domain:
-        _lon_min, _lon_max = -180.0, 180.0
-        _lat_min, _lat_max =  -90.0,  90.0
-        domain_str = "global"
-    else:
-        _lon_min, _lon_max = lon_min, lon_max
-        _lat_min, _lat_max = lat_min, lat_max
-        domain_str = f"{_lon_min}-{_lon_max}E_{_lat_min}-{_lat_max}N"
+    # ── Auto-convert month ────────────────────────────────────────────
+    if month not in range(1, 13):
+        raise ValueError(f"[CINEI] Invalid month: {month}. Must be 1-12.")
+    mon_name = _MONTH_NAME[month]
+    mon_id   = month - 1
+    mon_str  = _MONTH_STR[month]
+
+    # ── Resolve region of interest ────────────────────────────────────
+    _lon_min, _lon_max, _lat_min, _lat_max, region_name = get_region_bbox(
+        region       = region,
+        country_shp  = country_shp,
+        lon_min      = lon_min,
+        lon_max      = lon_max,
+        lat_min      = lat_min,
+        lat_max      = lat_max,
+        global_domain= global_domain,
+    )
 
     print(f"[CINEI] ── emis_union ──────────────────────────────")
     print(f"[CINEI] Species    : {species}")
     print(f"[CINEI] Month      : {month:02d} ({mon_name})")
     print(f"[CINEI] Year       : {year}")
+    print(f"[CINEI] Outer      : {outer_source}")
+    print(f"[CINEI] Inner      : {inner_source}")
     print(f"[CINEI] Resolution : {output_res}°")
-    print(f"[CINEI] Domain     : {domain_str}")
     print()
 
     # ── Validate paths ────────────────────────────────────────────────
@@ -186,58 +221,56 @@ def emis_union(species, month, year,
         _check_path(agg_dir, 'agg_dir')
     os.makedirs(save_dir, exist_ok=True)
 
-    # ── Read mapper → auto-resolve species names ──────────────────────
+    # ── Read mapper ───────────────────────────────────────────────────
     mapper    = pd.read_csv(mapper_path)
     mapper    = mapper.set_index('MEIC')
-    # Normalize species input
     sp_upper  = species.upper()
-    # Find matching MEIC key (case-insensitive)
     meic_keys = [k for k in mapper.index if k.upper() == sp_upper]
     if not meic_keys:
         raise ValueError(
             f"[CINEI] Species '{species}' not found in mapper.\n"
             f"        Available: {list(mapper.index)}"
         )
-    meic_spec = meic_keys[0]                        # e.g. 'SO2'
-    ceds_spec = mapper.loc[meic_spec, 'CEDS']       # e.g. 'SO2'
+    meic_spec = meic_keys[0]
+    ceds_spec = mapper.loc[meic_spec, 'CEDS']
     par       = mapper.loc[meic_spec, 'partition']
     M         = mapper.loc[meic_spec, 'weight']
     V         = mapper.loc[meic_spec, 'if VOC']
 
-    print(f"[CINEI] Mapper     : {meic_spec} → CEDS:{ceds_spec}  "
-          f"VOC:{V}  partition:{par}  weight:{M}")
-
-    # ── Build output coordinate arrays ────────────────────────────────
+    # ── Build output grid ─────────────────────────────────────────────
     half       = output_res / 2
     lon_arange = np.arange(_lon_min + half, _lon_max, output_res,
                            dtype=np.float32)
     lat_arange = np.arange(_lat_min + half, _lat_max, output_res,
                            dtype=np.float32)
-
-    # ── Read outer (global background) inventory ──────────────────────
-    outer_path = os.path.join(
-        outer_dir,
-        f'CEDS_Glb_0.5x0.5_anthro_{ceds_spec}__monthly_{year}.nc')
-    if ceds_spec == 'BC':
-        outer_path = os.path.join(
-            outer_dir, 'CEDS_Glb_0.5x0.5_anthro_BC__monthly_2016.nc')
-    _check_path(outer_path, 'outer inventory file (CEDS)')
-
-    ds       = rioxarray.open_rasterio(outer_path, masked=True)
-    re_lat   = np.arange(ds.y.values.min(), ds.y.values.max(), output_res)
-    re_lon   = np.arange(ds.x.values.min(), ds.x.values.max(), output_res)
-    emis_all = ds.interp(y=re_lat, x=re_lon).isel(time=mon_id)
-    outer_bg = emis_all.sel(x=lon_arange, y=lat_arange, method="nearest")
-
-    # ── Grid cell area and unit conversion ────────────────────────────
     lon_2d, lat_2d = np.meshgrid(lon_arange, lat_arange)
     area = ll_area(lat_2d, output_res)
+    n_lat, n_lon = len(lat_arange), len(lon_arange)
+
+    # ── Read outer (global background) inventory ──────────────────────
+    outer_bg = _read_outer(
+        outer_source = outer_source,
+        outer_dir    = outer_dir,
+        ceds_spec    = ceds_spec,
+        meic_spec    = meic_spec,
+        year         = year,
+        mon_id       = mon_id,
+        mon_str      = mon_str,
+        lon_arange   = lon_arange,
+        lat_arange   = lat_arange,
+        output_res   = output_res,
+        region_name  = region_name,
+        _lon_min=_lon_min, _lon_max=_lon_max,
+        _lat_min=_lat_min, _lat_max=_lat_max,
+    )
+
+    # ── Unit conversion ───────────────────────────────────────────────
     if V == 'Y':
         unit_outer = outer_bg * 0.001 * area * 2678400 * 1000000 * par / M
     else:
         unit_outer = outer_bg * 0.001 * area * 2678400 * 1000000 * par
 
-    # ── Clip outer background to region (exclude China / Taiwan) ─────
+    # ── Clip outer to outside region (China excl. Taiwan) ────────────
     country    = gpd.read_file(country_shp)
     China_shp  = country[country['CNTRY_NAME'] == 'China']
     province   = gpd.read_file(province_shp)
@@ -247,24 +280,15 @@ def emis_union(species, month, year,
     outer_clipped = unit_outer.rio.clip(
         mChina.geometry, mChina.crs, drop=False, invert=True)
 
-    # ── Get aggregated sectors (waste, shipping, aviation) ────────────
-    n_lat = len(lat_arange)
-    n_lon = len(lon_arange)
-
+    # ── Aggregated sectors (waste, shipping, aviation) ────────────────
     if agg_dir is not None:
         print(f"[CINEI] Regridding aggregated sectors...")
-        ds_agg = regrid_aggregation(
-            mon_id      = mon_id,
-            meic_spec   = meic_spec,
-            year        = year,
-            ceds_dir    = outer_dir,
-            htap_dir    = agg_dir,
-            mapper_path = mapper_path,
-            output_res  = output_res,
-            lon_min     = _lon_min,
-            lon_max     = _lon_max,
-            lat_min     = _lat_min,
-            lat_max     = _lat_max,
+        ds_agg   = regrid_aggregation(
+            mon_id=mon_id, meic_spec=meic_spec, year=year,
+            ceds_dir=outer_dir, htap_dir=agg_dir,
+            mapper_path=mapper_path, output_res=output_res,
+            lon_min=_lon_min, lon_max=_lon_max,
+            lat_min=_lat_min, lat_max=_lat_max,
         )
         allwst   = ds_agg['waste'].values
         alldoshp = ds_agg['shipping'].values
@@ -279,39 +303,23 @@ def emis_union(species, month, year,
         print(f"[CINEI] ⚠️  agg_dir not provided → "
               f"waste/shipping/aviation set to zero.")
         zeros    = np.zeros((n_lat, n_lon), dtype='float32')
-        allwst   = zeros
-        alldoshp = zeros
-        all_avi  = zeros
-        dms_agr  = zeros
+        allwst   = zeros; alldoshp = zeros
+        all_avi  = zeros; dms_agr  = zeros
 
-    # ── Read inner (regional) inventory files ─────────────────────────
-    inner_spec = 'PM10' if meic_spec == 'PMcoarse' else meic_spec
-    pattern    = f'*_{mon_name}_*_{inner_spec}.*'
+    # ── Read inner (regional) inventory ──────────────────────────────
+    act, idt, pwr, rdt, tpt = _read_inner(
+        inner_source = inner_source,
+        inner_dir    = inner_dir,
+        meic_spec    = meic_spec,
+        mon_name     = mon_name,
+        n_lat        = n_lat,
+        n_lon        = n_lon,
+        lon_arange   = lon_arange,
+        lat_arange   = lat_arange,
+        mon_id       = mon_id,
+    )
 
-    fn_act = os.path.join(inner_dir, fnmatch.filter(
-        fnmatch.filter(os.listdir(inner_dir), pattern), '*agr*nc')[0])
-    fn_idt = os.path.join(inner_dir, fnmatch.filter(
-        fnmatch.filter(os.listdir(inner_dir), pattern), '*ind*nc')[0])
-    fn_pwr = os.path.join(inner_dir, fnmatch.filter(
-        fnmatch.filter(os.listdir(inner_dir), pattern), '*pow*nc')[0])
-    fn_rdt = os.path.join(inner_dir, fnmatch.filter(
-        fnmatch.filter(os.listdir(inner_dir), pattern), '*res*nc')[0])
-    fn_tpt = os.path.join(inner_dir, fnmatch.filter(
-        fnmatch.filter(os.listdir(inner_dir), pattern), '*tra*nc')[0])
-
-    act = xr.open_dataset(fn_act)['z'][:].values.reshape((n_lat, n_lon))[::-1]
-    idt = xr.open_dataset(fn_idt)['z'][:].values.reshape((n_lat, n_lon))[::-1]
-    pwr = xr.open_dataset(fn_pwr)['z'][:].values.reshape((n_lat, n_lon))[::-1]
-    rdt = xr.open_dataset(fn_rdt)['z'][:].values.reshape((n_lat, n_lon))[::-1]
-    tpt = xr.open_dataset(fn_tpt)['z'][:].values.reshape((n_lat, n_lon))[::-1]
-
-    act = np.where(act > 0.0, act, 0.0)
-    idt = np.where(idt > 0.0, idt, 0.0)
-    pwr = np.where(pwr > 0.0, pwr, 0.0)
-    rdt = np.where(rdt > 0.0, rdt, 0.0)
-    tpt = np.where(tpt > 0.0, tpt, 0.0)
-
-    # ── Merge: outer background (clipped) + inner regional ───────────
+    # ── Merge sectors ─────────────────────────────────────────────────
     pwr_union = np.nan_to_num(outer_clipped['energy'],         nan=0) + pwr
     res_union = (np.nan_to_num(outer_clipped['residential'],   nan=0) +
                  np.nan_to_num(outer_clipped['solvents'],      nan=0) + rdt)
@@ -337,17 +345,15 @@ def emis_union(species, month, year,
          "sum":            (("lat", "lon"), sum_union)},
         coords={'lon': lon_arange, 'lat': lat_arange})
 
-    myds.attrs['unit']       = ('million mole/month/grid'
-                                if V == 'Y' else 'ton/month/grid')
-    myds.attrs['resolution'] = f'{output_res}° x {output_res}°'
-    myds.attrs['domain']     = domain_str
-    myds.attrs['conventions']= 'NETCDF3_CLASSIC'
-    myds.attrs['comments']   = (
-        'Integrated inventories: outer global background (CEDS) + '
-        'inner regional (MEIC) with uniform VOC speciation (MOZART).')
-    myds.attrs['authors']    = 'Yijuan Zhang, University of Bremen.'
-    myds.attrs['title']      = (
-        f'Integrated anthropogenic emissions ({domain_str}) '
+    myds.attrs['unit']        = 'million mole/month/grid' if V=='Y' else 'ton/month/grid'
+    myds.attrs['resolution']  = f'{output_res}° x {output_res}°'
+    myds.attrs['region']      = region_name
+    myds.attrs['outer_source']= outer_source
+    myds.attrs['inner_source']= inner_source
+    myds.attrs['conventions'] = 'NETCDF3_CLASSIC'
+    myds.attrs['authors']     = 'Yijuan Zhang, University of Bremen.'
+    myds.attrs['title']       = (
+        f'CINEI integrated emissions ({region_name}) '
         f'{meic_spec} {year}-{mon_str}')
 
     # ── Write output ──────────────────────────────────────────────────
@@ -355,11 +361,203 @@ def emis_union(species, month, year,
     res_str     = str(output_res).replace('.', 'p')
     output = os.path.join(
         save_dir,
-        f'Integrated_Anthropogenic_{year}_{mon_name}_'
-        f'{output_spec}_{res_str}deg_{domain_str}.nc')
+        f'CINEI_{year}_{mon_name}_{output_spec}_'
+        f'{res_str}deg_{region_name}.nc')
     myds.to_netcdf(output, format="NETCDF3_CLASSIC")
-    print(f"[CINEI] ✅ Output saved: {output}")
+    print(f"[CINEI] ✅ Saved: {output}")
     return output
+
+
+# ── Inventory readers ─────────────────────────────────────────────────────────
+
+def _read_outer(outer_source, outer_dir, ceds_spec, meic_spec,
+                year, mon_id, mon_str, lon_arange, lat_arange,
+                output_res, region_name,
+                _lon_min, _lon_max, _lat_min, _lat_max):
+    """Read outer (global background) inventory and return rioxarray."""
+
+    if outer_source == 'CEDS':
+        # CEDS file pattern
+        fname = (_CEDS_BC_FILE if ceds_spec == 'BC'
+                 else _CEDS_PATTERN.format(spec=ceds_spec, year=year))
+        path  = os.path.join(outer_dir, fname)
+        _check_path(path, f'CEDS file ({fname})')
+
+        ds       = rioxarray.open_rasterio(path, masked=True)
+        re_lat   = np.arange(ds.y.values.min(), ds.y.values.max(), output_res)
+        re_lon   = np.arange(ds.x.values.min(), ds.x.values.max(), output_res)
+        emis_all = ds.interp(y=re_lat, x=re_lon).isel(time=mon_id)
+
+        # Check data covers region
+        check_data_coverage(
+            float(ds.x.min()), float(ds.x.max()),
+            float(ds.y.min()), float(ds.y.max()),
+            _lon_min, _lon_max, _lat_min, _lat_max,
+            region_name
+        )
+        return emis_all.sel(x=lon_arange, y=lat_arange, method="nearest")
+
+    elif outer_source == 'EDGAR':
+        # EDGAR: one nc per year, dims (time, lat, lon)
+        # Pattern: v8.1_FT2022_AP_{spec}_{year}_TOTALS_flx_nc.nc
+        import glob
+        pattern = os.path.join(outer_dir, f"*{ceds_spec}*{year}*TOTALS*.nc")
+        files   = glob.glob(pattern)
+        if not files:
+            raise FileNotFoundError(
+                f"[CINEI] No EDGAR file found for spec={ceds_spec} "
+                f"year={year} in {outer_dir}\n"
+                f"        Pattern: {pattern}"
+            )
+        ds  = xr.open_dataset(files[0])
+        # Find lat/lon dims
+        lat_dim = next(d for d in ds.dims if 'lat' in d.lower())
+        lon_dim = next(d for d in ds.dims if 'lon' in d.lower())
+        time_dim= next(d for d in ds.dims if d in ('time', 'month'))
+        ds_mon  = ds.isel({time_dim: mon_id})
+        check_data_coverage(
+            float(ds[lon_dim].min()), float(ds[lon_dim].max()),
+            float(ds[lat_dim].min()), float(ds[lat_dim].max()),
+            _lon_min, _lon_max, _lat_min, _lat_max, region_name
+        )
+        # Return as rioxarray-compatible
+        var = [v for v in ds_mon.data_vars][0]
+        return ds_mon[var].sel(
+            {lat_dim: lat_arange, lon_dim: lon_arange}, method='nearest')
+
+    elif outer_source == 'HTAP':
+        # HTAP: edgar_HTAPv3_{year}_{spec}.nc
+        path = os.path.join(
+            outer_dir, f"edgar_HTAPv3_{year}_{meic_spec}.nc")
+        _check_path(path, 'HTAP outer file')
+        ds   = xr.open_dataset(path)
+        # Sum all sector variables for background
+        time_dim = next(d for d in ds.dims if d in ('time', 'month'))
+        ds_mon   = ds.isel({time_dim: mon_id})
+        total    = sum(ds_mon[v] for v in ds_mon.data_vars)
+        return total.sel(lat=lat_arange, lon=lon_arange, method='nearest')
+
+    elif outer_source == 'user':
+        # User-provided: auto-check and standardize
+        print(f"[CINEI] Checking user-provided outer data...")
+        nc_files = list(Path(outer_dir).glob("*.nc"))
+        if not nc_files:
+            raise FileNotFoundError(
+                f"[CINEI] No NetCDF files found in outer_dir: {outer_dir}"
+            )
+        # Check each file, standardize if needed
+        standardized = []
+        for f in nc_files:
+            report = check_user_data(str(f))
+            if report['status'] != 'ok':
+                print(f"[CINEI] Auto-standardizing: {f.name}")
+                std_path = standardize_netcdf(str(f))
+                standardized.append(std_path)
+            else:
+                standardized.append(str(f))
+
+        # Load and select month
+        ds     = xr.open_dataset(standardized[0])
+        ds_mon = ds.isel(month=mon_id)
+        # Check coverage
+        check_data_coverage(
+            float(ds.lon.min()), float(ds.lon.max()),
+            float(ds.lat.min()), float(ds.lat.max()),
+            _lon_min, _lon_max, _lat_min, _lat_max, region_name
+        )
+        var = 'sum' if 'sum' in ds_mon else list(ds_mon.data_vars)[0]
+        return ds_mon[var].sel(
+            lat=lat_arange, lon=lon_arange, method='nearest')
+
+    else:
+        raise ValueError(f"[CINEI] Unknown outer_source: {outer_source}")
+
+
+def _read_inner(inner_source, inner_dir, meic_spec, mon_name,
+                n_lat, n_lon, lon_arange, lat_arange, mon_id):
+    """Read inner (regional) inventory sectors."""
+
+    zeros = np.zeros((n_lat, n_lon), dtype='float32')
+
+    if inner_source == 'MEIC':
+        inner_spec = 'PM10' if meic_spec == 'PMcoarse' else meic_spec
+        pattern    = f'*_{mon_name}_*_{inner_spec}.*'
+
+        def _load(sector_pattern):
+            matches = fnmatch.filter(
+                fnmatch.filter(os.listdir(inner_dir), pattern),
+                sector_pattern)
+            if not matches:
+                print(f"[CINEI] ⚠️  MEIC sector not found: {sector_pattern}"
+                      f" → set to zero")
+                return zeros.copy()
+            fn  = os.path.join(inner_dir, matches[0])
+            arr = xr.open_dataset(fn)['z'][:].values
+            arr = arr.reshape((n_lat, n_lon))[::-1]
+            return np.where(arr > 0.0, arr, 0.0)
+
+        act = _load('*agr*nc')
+        idt = _load('*ind*nc')
+        pwr = _load('*pow*nc')
+        rdt = _load('*res*nc')
+        tpt = _load('*tra*nc')
+        return act, idt, pwr, rdt, tpt
+
+    elif inner_source == 'user':
+        print(f"[CINEI] Checking user-provided inner data...")
+        nc_files = list(Path(inner_dir).glob("*.nc"))
+        if not nc_files:
+            raise FileNotFoundError(
+                f"[CINEI] No NetCDF files found in inner_dir: {inner_dir}"
+            )
+        standardized = []
+        for f in nc_files:
+            report = check_user_data(str(f))
+            if report['status'] != 'ok':
+                print(f"[CINEI] Auto-standardizing: {f.name}")
+                std_path = standardize_netcdf(str(f))
+                standardized.append(std_path)
+            else:
+                standardized.append(str(f))
+
+        ds     = xr.open_dataset(standardized[0])
+        ds_mon = ds.isel(month=mon_id)
+
+        def _get(sector):
+            if sector in ds_mon:
+                return ds_mon[sector].sel(
+                    lat=lat_arange, lon=lon_arange,
+                    method='nearest').values
+            print(f"[CINEI] ⚠️  Sector '{sector}' not found → zero")
+            return zeros.copy()
+
+        return (_get('agriculture'), _get('industry'),
+                _get('power'),       _get('residential'),
+                _get('transportation'))
+
+    elif inner_source in ('EDGAR', 'HTAP'):
+        # For EDGAR/HTAP as inner, load from standardized NetCDF
+        import glob
+        files = glob.glob(os.path.join(inner_dir, "*.nc"))
+        if not files:
+            raise FileNotFoundError(
+                f"[CINEI] No NetCDF in inner_dir: {inner_dir}")
+        ds     = xr.open_dataset(files[0])
+        ds_mon = ds.isel(month=mon_id) if 'month' in ds.dims else ds
+
+        def _get(sector):
+            if sector in ds_mon:
+                return ds_mon[sector].sel(
+                    lat=lat_arange, lon=lon_arange,
+                    method='nearest').values
+            return zeros.copy()
+
+        return (_get('agriculture'), _get('industry'),
+                _get('power'),       _get('residential'),
+                _get('transportation'))
+
+    else:
+        raise ValueError(f"[CINEI] Unknown inner_source: {inner_source}")
 
 
 def _check_path(path, name):
@@ -367,5 +565,4 @@ def _check_path(path, name):
     if not os.path.exists(path):
         raise FileNotFoundError(
             f"[CINEI] Required path not found: '{path}'\n"
-            f"  Parameter : {name}\n"
-            f"  Please provide a valid path when calling emis_union().")
+            f"  Parameter : {name}")
