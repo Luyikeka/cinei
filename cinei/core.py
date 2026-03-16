@@ -10,6 +10,8 @@ import os
 from pathlib import Path
 from .utils import ll_area
 from .regridding import regrid_aggregation, SUPPORTED_RESOLUTIONS
+from .utils import get_mapper_path, get_country_shp, get_province_shp
+from .utils import get_mapper_path, get_country_shp, get_province_shp
 
 
 # ── Month lookup tables ───────────────────────────────────────────────────────
@@ -23,7 +25,7 @@ _MONTH_STR = {m: f"{m:02d}" for m in range(1, 13)}
 
 def emis_union(species, month, year,
                outer_dir, inner_dir, save_dir,
-               mapper_path, country_shp, province_shp,
+               mapper_path=None, country_shp=None, province_shp=None,
                agg_dir=None,
                output_res=0.25,
                global_domain=False,
@@ -125,6 +127,17 @@ def emis_union(species, month, year,
     ... )
     """
     year = str(year)
+
+    # ── Auto-resolve bundled data files ──────────────────────────────
+    if mapper_path is None:
+        mapper_path = get_mapper_path()
+        print(f"[CINEI] mapper_path : using bundled default")
+    if country_shp is None:
+        country_shp = get_country_shp()
+        print(f"[CINEI] country_shp : using bundled default")
+    if province_shp is None:
+        province_shp = get_province_shp()
+        print(f"[CINEI] province_shp: using bundled default")
 
     # ── Auto-convert month ────────────────────────────────────────────
     if month not in range(1, 13):

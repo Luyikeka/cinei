@@ -5,6 +5,19 @@ setup(
     name="cinei",
     version=__version__,
     packages=find_packages(),
+    package_data={
+        "cinei": [
+            "data/*.csv",
+            "data/*.shp",
+            "data/*.dbf",
+            "data/*.shx",
+            "data/*.prj",
+            "data/*.sbn",
+            "data/*.sbx",
+            "data/*.xml",
+        ]
+    },
+    include_package_data=True,
     install_requires=[
         "numpy",
         "pandas",
@@ -21,5 +34,5 @@ setup(
     description="Coupled and Integrated Emission Inventory (CINEI)",
     long_description=open("README.md").read(),
     long_description_content_type="text/markdown",
-    url="https://github.com/Luyikeka/claude_cinei",
+    url="https://github.com/Luyikeka/cinei",
 )
