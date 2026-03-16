@@ -1,4 +1,6 @@
 """Core functionality for CINEI emission integration."""
+from __future__ import annotations
+from typing import List, Literal, Union
 
 import pandas as pd
 import rioxarray
@@ -13,6 +15,29 @@ from .regridding import regrid_aggregation, SUPPORTED_RESOLUTIONS
 from .preprocess import check_user_data, standardize_netcdf
 from .regions import get_region_bbox, check_data_coverage, list_regions
 
+
+# ── Supported sectors ────────────────────────────────────────────────────────
+SECTORS = Literal[
+    "energy",
+    "residential",
+    "industry",
+    "agriculture",
+    "transportation",
+    "waste",
+    "shipping",
+    "aviation",
+]
+
+ALL_SECTORS = [
+    "energy",
+    "residential",
+    "industry",
+    "agriculture",
+    "transportation",
+    "waste",
+    "shipping",
+    "aviation",
+]
 
 # ── Supported inventory sources ───────────────────────────────────────────────
 SUPPORTED_OUTER = ['CEDS', 'EDGAR', 'HTAP', 'user']
@@ -41,6 +66,9 @@ def emis_union(species, month, year,
                country_shp=None,
                province_shp=None,
                output_res=0.25,
+               sectors: Union[List[Literal["energy","residential","industry",
+                   "agriculture","transportation","waste","shipping","aviation"]],
+                   str] = "all",
                region=None,
                global_domain=False,
                lon_min=None, lon_max=None,
@@ -188,6 +216,19 @@ def emis_union(species, month, year,
     mon_id   = month - 1
     mon_str  = _MONTH_STR[month]
 
+    # ── Validate and resolve sectors ─────────────────────────────────
+    if sectors == "all":
+        active_sectors = ALL_SECTORS.copy()
+    else:
+        invalid = [s for s in sectors if s not in ALL_SECTORS]
+        if invalid:
+            raise ValueError(
+                f"[CINEI] Invalid sectors: {invalid}\n"
+                f"        Available: {ALL_SECTORS}"
+            )
+        active_sectors = list(sectors)
+    print(f"[CINEI] Sectors    : {active_sectors}")
+
     # ── Resolve region of interest ────────────────────────────────────
     _lon_min, _lon_max, _lat_min, _lat_max, region_name = get_region_bbox(
         region       = region,
@@ -319,16 +360,28 @@ def emis_union(species, month, year,
         mon_id       = mon_id,
     )
 
-    # ── Merge sectors ─────────────────────────────────────────────────
-    pwr_union = np.nan_to_num(outer_clipped['energy'],         nan=0) + pwr
+    # ── Merge sectors (only active) ──────────────────────────────────────
+    pwr_union = (np.nan_to_num(outer_clipped['energy'],         nan=0) + pwr
+               if 'energy'         in active_sectors
+               else np.zeros((n_lat, n_lon), dtype='float32'))
     res_union = (np.nan_to_num(outer_clipped['residential'],   nan=0) +
-                 np.nan_to_num(outer_clipped['solvents'],      nan=0) + rdt)
-    idt_union = np.nan_to_num(outer_clipped['industrial'],     nan=0) + idt
-    shp_union = np.nan_to_num(outer_clipped['ships'],          nan=0) + alldoshp
-    tpt_union = np.nan_to_num(outer_clipped['transportation'], nan=0) + tpt
-    act_union = np.nan_to_num(outer_clipped['agriculture'],    nan=0) + dms_agr
-    swd_union = allwst
-    avi_union = all_avi
+                 np.nan_to_num(outer_clipped['solvents'],      nan=0) + rdt
+               if 'residential'    in active_sectors
+               else np.zeros((n_lat, n_lon), dtype='float32'))
+    idt_union = (np.nan_to_num(outer_clipped['industrial'],     nan=0) + idt
+               if 'industry'       in active_sectors
+               else np.zeros((n_lat, n_lon), dtype='float32'))
+    shp_union = (np.nan_to_num(outer_clipped['ships'],          nan=0) + alldoshp
+               if 'shipping'       in active_sectors
+               else np.zeros((n_lat, n_lon), dtype='float32'))
+    tpt_union = (np.nan_to_num(outer_clipped['transportation'], nan=0) + tpt
+               if 'transportation' in active_sectors
+               else np.zeros((n_lat, n_lon), dtype='float32'))
+    act_union = (np.nan_to_num(outer_clipped['agriculture'],    nan=0) + dms_agr
+               if 'agriculture'    in active_sectors
+               else np.zeros((n_lat, n_lon), dtype='float32'))
+    swd_union = allwst if 'waste'    in active_sectors else np.zeros((n_lat, n_lon), dtype='float32')
+    avi_union = all_avi if 'aviation' in active_sectors else np.zeros((n_lat, n_lon), dtype='float32')
     sum_union = (pwr_union + res_union + idt_union + shp_union +
                  swd_union + tpt_union + act_union)
 
