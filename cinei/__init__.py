@@ -14,6 +14,7 @@ from .download import (
     download_edgar_monthly,
     download_htap_monthly,
 )
+from .voc_speciation import nmvoc_speciation
 from .preprocess import (
     check_user_data,
     standardize_netcdf,
@@ -33,6 +34,7 @@ __all__ = [
     "download_htap", "list_htap_files",
     "download_edgar", "list_edgar_species",
     "download_edgar_monthly", "download_htap_monthly",
+    "nmvoc_speciation",
     "check_user_data", "standardize_netcdf",
     "txt_to_netcdf", "show_cinei_standard",
     "__version__",

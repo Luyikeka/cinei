@@ -14,6 +14,7 @@ from .utils import ll_area, get_mapper_path, get_country_shp, get_province_shp
 from .regridding import regrid_aggregation, SUPPORTED_RESOLUTIONS
 from .preprocess import check_user_data, standardize_netcdf
 from .regions import get_region_bbox, check_data_coverage, list_regions
+from .voc_speciation import nmvoc_speciation as _nmvoc_speciation
 
 
 # ── Supported sectors ────────────────────────────────────────────────────────
@@ -62,6 +63,7 @@ def emis_union(species, month, year,
                outer_source='CEDS',
                inner_source='MEIC',
                agg_dir=None,
+               nmvoc_speciation=False,
                mapper_path=None,
                country_shp=None,
                province_shp=None,
@@ -418,6 +420,16 @@ def emis_union(species, month, year,
         f'{res_str}deg_{region_name}.nc')
     myds.to_netcdf(output, format="NETCDF3_CLASSIC")
     print(f"[CINEI] ✅ Saved: {output}")
+
+    # ── Auto-run VOC speciation if requested ──────────────────────────
+    if nmvoc_speciation and meic_spec.upper() == 'NMVOC':
+        print(f"\n[CINEI] Running NMVOC speciation...")
+        _nmvoc_speciation(
+            nmvoc_nc_path=output,
+            save_dir=save_dir,
+            sectors=active_sectors,
+        )
+
     return output
 
 
