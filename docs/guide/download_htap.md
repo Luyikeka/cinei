@@ -1,46 +1,33 @@
-# HTAP Data Download
+# Downloading Emission Data
 
-**HTAP v3** — Hemispheric Transport of Air Pollution emission mosaic
-Global gridded emissions, monthly, 2000–2018, 9 species, 16 sectors.
-
-**Source:** [Zenodo 10.5281/zenodo.7516361](https://doi.org/10.5281/zenodo.7516361)
+CINEI provides built-in download functions for all supported emission inventories.
+This page explains each argument and how to use them.
 
 ---
 
-## Function: `download_htap()`
+## Arguments Reference
 
-Downloads the full HTAP dataset (all years 2000–2018) for selected species.
-```python
-import cinei
-
-cinei.download_htap(
-    save_dir  = '/work/bb1554/data/HTAP',
-    species   = ['NOx', 'SO2'],
-    resolution= '05x05',
-    data_type = 'emissions',
-    extract   = True,
-    keep_zip  = False,
-)
-```
-
-### Arguments
-
-#### `save_dir` *(required)*
-Directory where downloaded files will be saved.
-```python
-save_dir = '/work/bb1554/data/HTAP'   # DKRZ
-save_dir = '/mnt/hgfs/seafile/testdata/HTAP'  # local VM
-```
-The directory is created automatically if it does not exist.
+All download functions share a consistent set of arguments.
+Understanding each argument once lets you use any inventory download function.
 
 ---
 
-#### `species` *(optional)*
-List of species to download. **Case-insensitive** — all variants below are accepted.
-Default: all 9 species.
+### `save_dir`
+**Required.** Directory where files will be saved.
+Created automatically if it does not exist.
+```python
+save_dir = '/work/bb1554/data/HTAP'          # DKRZ
+save_dir = '/mnt/hgfs/seafile/testdata/HTAP' # local VM
+```
 
-| Standard name | Also accepted |
-|--------------|---------------|
+---
+
+### `species`
+**Optional.** List of species to download. Case-insensitive.
+If `None`, all available species are downloaded.
+
+| Standard | Also accepted |
+|----------|--------------|
 | `'BC'` | `'bc'` |
 | `'CO'` | `'co'` |
 | `'NH3'` | `'nh3'` |
@@ -51,122 +38,34 @@ Default: all 9 species.
 | `'PM2.5'` | `'pm2.5'`, `'PM25'`, `'pm25'` |
 | `'SO2'` | `'so2'` |
 ```python
-# Single species
-species = ['NOx']
-
-# Multiple species
-species = ['NOx', 'SO2', 'PM2.5']
-
-# All species (default)
-species = None
+species = ['NOx']                  # single species
+species = ['NOx', 'SO2', 'PM2.5'] # multiple species
+species = None                     # all species (default)
 ```
-
-!!! tip
-    Use `cinei.list_htap_files()` to see file sizes before downloading.
 
 ---
 
-#### `resolution` *(optional)*
-Spatial resolution of the downloaded gridded data.
-Default: `'05x05'`
-
-| Option | Resolution | File size per species |
-|--------|-----------|----------------------|
-| `'05x05'` | 0.5° × 0.5° | ~560–840 MB |
-| `'01x01'` | 0.1° × 0.1° | ~8–13 GB |
+### `year` / `years`
+**Optional.** Target year(s) as integer or list of integers.
 ```python
-resolution = '05x05'   # recommended — smaller files
-resolution = '01x01'   # high resolution — very large!
+year  = 2017                        # single year
+years = [2015, 2016, 2017]          # multiple years
+years = list(range(2010, 2018))     # range of years
 ```
 
-!!! warning
-    `'01x01'` files are 8–13 GB per species. Only download if you specifically
-    need 0.1° resolution. For most applications, `'05x05'` is sufficient.
+Each inventory has its own temporal coverage:
+
+| Inventory | Coverage |
+|-----------|----------|
+| CEDS | 1750–2019 |
+| HTAP | 2000–2018 |
+| EDGAR | 1970–2022 |
 
 ---
 
-#### `data_type` *(optional)*
-Type of emission data to download.
-Default: `'emissions'`
-
-| Option | Unit | Use case |
-|--------|------|----------|
-| `'emissions'` | Mg/month | total emission amount |
-| `'fluxes'` | kg/m²/s | emission flux density |
-```python
-data_type = 'emissions'   # Mg/month — for CINEI integration
-data_type = 'fluxes'      # kg/m²/s — for atmospheric models
-```
-
----
-
-#### `extract` *(optional)*
-Whether to automatically unzip the downloaded file.
-Default: `True`
-```python
-extract = True    # unzip immediately after download (recommended)
-extract = False   # keep as .zip only
-```
-
----
-
-#### `keep_zip` *(optional)*
-Whether to keep the `.zip` file after extraction.
-Default: `False`
-```python
-keep_zip = False   # delete zip after extraction (saves disk space)
-keep_zip = True    # keep zip (useful if you need to re-extract)
-```
-
----
-
-## Function: `download_htap_monthly()`
-
-Downloads HTAP data and extracts a **specific month** as a standalone
-`[lat, lon]` NetCDF file. More efficient than downloading the full dataset
-when you only need one month.
-```python
-import cinei
-
-cinei.download_htap_monthly(
-    save_dir   = '/work/bb1554/data/HTAP',
-    species    = ['SO2', 'NOx'],
-    year       = 2017,
-    month      = 1,
-    resolution = '05x05',
-    data_type  = 'emissions',
-    keep_annual= False,
-)
-```
-
-### Arguments
-
-#### `save_dir` *(required)*
-Same as `download_htap()`.
-
----
-
-#### `species` *(required)*
-Same species options as `download_htap()`. Must be provided explicitly.
-```python
-species = ['SO2']           # single
-species = ['SO2', 'NOx']    # multiple
-```
-
----
-
-#### `year` *(required)*
-Target year as integer.
-**Coverage: 2000–2018**
-```python
-year = 2017   # ✅
-year = 2019   # ❌ raises ValueError — outside coverage
-```
-
----
-
-#### `month` *(required)*
-Target month as integer 1–12.
+### `month`
+**Required for monthly functions.**
+Target month as integer 1–12. Auto-converts to all required formats internally.
 ```python
 month = 1    # January
 month = 7    # July
@@ -175,76 +74,218 @@ month = 12   # December
 
 ---
 
-#### `resolution` *(optional)*
-Same as `download_htap()`. Default: `'05x05'`.
+### `resolution`
+**Optional (HTAP only).** Spatial resolution of gridded data.
+Default: `'05x05'`
+
+| Option | Resolution | File size |
+|--------|-----------|-----------|
+| `'05x05'` | 0.5° × 0.5° | ~560–840 MB per species |
+| `'01x01'` | 0.1° × 0.1° | ~8–13 GB per species |
+```python
+resolution = '05x05'   # recommended
+resolution = '01x01'   # high-res, very large
+```
 
 ---
 
-#### `data_type` *(optional)*
-Same as `download_htap()`. Default: `'emissions'`.
+### `data_type`
+**Optional (HTAP and EDGAR).** Type of emission data.
+Default: `'emissions'`
+
+| Option | Unit | Use case |
+|--------|------|----------|
+| `'emissions'` | Mg/month | total emission amount |
+| `'fluxes'` | kg/m²/s | for atmospheric models |
+```python
+data_type = 'emissions'   # for CINEI integration
+data_type = 'fluxes'      # for WRF-Chem or similar
+```
 
 ---
 
-#### `keep_annual` *(optional)*
-Whether to keep the extracted annual NetCDF file after saving the monthly file.
+### `extract`
+**Optional.** Automatically unzip after download.
+Default: `True`
+```python
+extract = True    # unzip immediately (recommended)
+extract = False   # keep as .zip only
+```
+
+---
+
+### `keep_zip` / `keep_tar`
+**Optional.** Keep compressed file after extraction.
 Default: `False`
 ```python
-keep_annual = False  # delete annual nc after extracting month (saves space)
-keep_annual = True   # keep annual nc (useful to extract multiple months
-                     # without re-downloading the large zip)
+keep_zip = False   # delete after extraction (saves disk space)
+keep_zip = True    # keep (useful to re-extract later)
+```
+
+---
+
+### `keep_annual`
+**Optional (monthly functions only).**
+Keep the full annual NetCDF after extracting the requested month.
+Default: `False`
+```python
+keep_annual = False  # delete annual file after extracting month
+keep_annual = True   # keep annual file (reuse for other months)
 ```
 
 !!! tip
-    If you need multiple months from the same year, set `keep_annual=True`
-    on the first call. Subsequent calls will skip the download entirely:
-```python
-    # First call — downloads zip and extracts annual nc
-    cinei.download_htap_monthly(..., year=2017, month=1, keep_annual=True)
-
-    # Second call — reuses existing annual nc, no download needed
-    cinei.download_htap_monthly(..., year=2017, month=7, keep_annual=True)
-```
+    Set `keep_annual=True` when extracting multiple months from the same year
+    to avoid re-downloading the large zip file each time.
 
 ---
 
-## Helper: `list_htap_files()`
+## Download by Inventory
 
-Preview available files and sizes before downloading.
+### CEDS
+
+Global gridded anthropogenic emissions at 0.5°, monthly, 1750–2019.
+[DOI: 10.25584/PNNLDataHub/1779095](https://doi.org/10.25584/PNNLDataHub/1779095)
 ```python
 import cinei
 
-# Default: 0.5° emissions
-cinei.list_htap_files()
-
-# Specific resolution and type
-cinei.list_htap_files(resolution='01x01', data_type='fluxes')
-
-# Filter by species
-cinei.list_htap_files(species=['NOx', 'SO2'])
-```
-
-Output example:
-```
-[CINEI] HTAP v3 — 0.5° x 0.5°  emissions
-[CINEI] Species    Filename                                            Size
-[CINEI] -----------------------------------------------------------------
-[CINEI] NOx        gridmaps_05x05_emissions_NOx.zip                  681 MB
-[CINEI] SO2        gridmaps_05x05_emissions_SO2.zip                  556 MB
+cinei.download_ceds(
+    save_dir = '/work/bb1554/data/CEDS',
+    species  = ['NMVOC', 'NOx', 'SO2'],
+    keep_tar = False,
+)
 ```
 
 ---
 
-## Output file naming
-```
-# download_htap() → directory per species
-gridmaps_05x05_emissions_NOx/
-    edgar_HTAPv3_2000_NOx.nc
-    edgar_HTAPv3_2001_NOx.nc
-    ...
-    edgar_HTAPv3_2018_NOx.nc
+### MEIC
 
-# download_htap_monthly() → single monthly file
-HTAP_v3_SO2_05x05_2017_01_Jan_emissions.nc
+China regional emissions at 0.25°, monthly, by sector.
+Sample data (2017 Jan & Jul) publicly available on Zenodo.
+[DOI: 10.5281/zenodo.15039737](https://doi.org/10.5281/zenodo.15039737)
+```python
+# Download sample data
+cinei.download_meic_sample(
+    save_dir = '/work/bb1554/data/MEIC',
+    months   = ['jan', 'jul'],
+)
+
+# Check which files are present
+cinei.check_meic_files(
+    meic_dir = '/work/bb1554/data/MEIC/2017',
+    year     = 2017,
+    species  = ['NOx', 'SO2'],
+)
+
+# Print full dataset registration instructions
+cinei.get_meic_info()
+```
+
+---
+
+### EDGAR
+
+Global gridded emissions at 0.1°, monthly, 1970–2022.
+[edgar.jrc.ec.europa.eu/dataset_ap81](https://edgar.jrc.ec.europa.eu/dataset_ap81)
+```python
+# Download full year
+cinei.download_edgar(
+    save_dir  = '/work/bb1554/data/EDGAR',
+    species   = ['NOx', 'SO2'],
+    years     = [2017],
+    data_type = 'fluxes',
+)
+
+# Download specific month only
+cinei.download_edgar_monthly(
+    save_dir  = '/work/bb1554/data/EDGAR',
+    species   = ['NOx'],
+    year      = 2017,
+    month     = 1,
+)
+```
+
+---
+
+### HTAP
+
+Global emission mosaic at 0.1° and 0.5°, monthly, 2000–2018.
+[DOI: 10.5281/zenodo.7516361](https://doi.org/10.5281/zenodo.7516361)
+```python
+# Preview file sizes before downloading
+cinei.list_htap_files(resolution='05x05', data_type='emissions')
+
+# Download full dataset (all years 2000–2018)
+cinei.download_htap(
+    save_dir   = '/work/bb1554/data/HTAP',
+    species    = ['NMVOC', 'NOx', 'SO2'],
+    resolution = '05x05',
+    data_type  = 'emissions',
+    extract    = True,
+    keep_zip   = False,
+)
+
+# Download one specific month
+cinei.download_htap_monthly(
+    save_dir    = '/work/bb1554/data/HTAP',
+    species     = ['NMVOC'],
+    year        = 2017,
+    month       = 1,
+    resolution  = '05x05',
+    data_type   = 'emissions',
+    keep_annual = True,
+)
+```
+
+---
+
+## Example: HTAP NMVOC January 2017
+
+Here is a complete step-by-step example using HTAP NMVOC data.
+
+**Step 1 — Preview available files:**
+```python
+import cinei
+cinei.list_htap_files(resolution='05x05', species=['NMVOC'])
+```
+Output:
+```
+[CINEI] HTAP v3 — 0.5° x 0.5°  emissions
+[CINEI] Species    Filename                                       Size
+[CINEI] NMVOC      gridmaps_05x05_emissions_NMVOC.zip            839 MB
+```
+
+**Step 2 — Download January 2017:**
+```python
+cinei.download_htap_monthly(
+    save_dir    = '/work/bb1554/data/HTAP',
+    species     = ['NMVOC'],
+    year        = 2017,
+    month       = 1,
+    resolution  = '05x05',
+    data_type   = 'emissions',
+    keep_annual = True,   # keep for July download below
+)
+```
+
+**Step 3 — Reuse annual file to extract another month:**
+```python
+cinei.download_htap_monthly(
+    save_dir    = '/work/bb1554/data/HTAP',
+    species     = ['NMVOC'],
+    year        = 2017,
+    month       = 7,
+    resolution  = '05x05',
+    keep_annual = False,   # now safe to delete
+)
+```
+
+**Output files:**
+```
+/work/bb1554/data/HTAP/
+├── gridmaps_05x05_emissions_NMVOC/
+│   └── edgar_HTAPv3_2017_NMVOC.nc     ← annual file (if keep_annual=True)
+├── HTAP_v3_NMVOC_05x05_2017_01_Jan_emissions.nc   ← monthly [lat, lon]
+└── HTAP_v3_NMVOC_05x05_2017_07_Jul_emissions.nc   ← monthly [lat, lon]
 ```
 
 ---
