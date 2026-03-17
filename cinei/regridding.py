@@ -1,51 +1,50 @@
 """
 Regridding utilities for CINEI.
-
-Handles regridding of waste (CEDS), shipping and aviation (HTAP)
-sector emissions to the target output grid.
+Uses scipy for interpolation — no ESMF/xesmf dependency required.
 """
 
 import numpy as np
 import xarray as xr
 import pandas as pd
 from pathlib import Path
+from scipy.interpolate import RegularGridInterpolator
 
-# ── Supported output resolutions ─────────────────────────────────────────────
 SUPPORTED_RESOLUTIONS = [0.05, 0.1, 0.25, 0.5]
 
 
-def build_output_grid(lon_min, lon_max, lat_min, lat_max, res):
+def _regrid(data, src_lat, src_lon, dst_lat, dst_lon, method='linear'):
     """
-    Build xESMF-compatible output grid.
+    Regrid 2D data from source to destination grid using scipy.
 
     Parameters
     ----------
-    lon_min, lon_max : float
-        Longitude range.
-    lat_min, lat_max : float
-        Latitude range.
-    res : float
-        Output resolution in degrees.
+    data : np.ndarray, shape (n_src_lat, n_src_lon)
+    src_lat, src_lon : 1D arrays — source grid coordinates
+    dst_lat, dst_lon : 1D arrays — destination grid coordinates
+    method : str — 'linear' or 'nearest'
 
     Returns
     -------
-    tuple: (ds_out, lon_array, lat_array)
+    np.ndarray, shape (n_dst_lat, n_dst_lon)
     """
-    try:
-        import xesmf as xe
-    except ImportError:
-        raise ImportError(
-            "[CINEI] xesmf is required for regridding.\n"
-            "        Install with: pip install xesmf"
-        )
-    half = res / 2
-    ds_out = xe.util.grid_2d(
-        lon_min, lon_max, res,
-        lat_min, lat_max, res
+    # Replace NaN with 0 for interpolation
+    data_filled = np.nan_to_num(data, nan=0.0)
+
+    # Build interpolator
+    interp = RegularGridInterpolator(
+        (src_lat, src_lon),
+        data_filled,
+        method=method,
+        bounds_error=False,
+        fill_value=0.0,
     )
-    lon_arr = np.arange(lon_min + half, lon_max, res, dtype=np.float32)
-    lat_arr = np.arange(lat_min + half, lat_max, res, dtype=np.float32)
-    return ds_out, lon_arr, lat_arr
+
+    # Build destination mesh
+    dst_lon_2d, dst_lat_2d = np.meshgrid(dst_lon, dst_lat)
+    pts = np.column_stack([dst_lat_2d.ravel(), dst_lon_2d.ravel()])
+
+    result = interp(pts).reshape(len(dst_lat), len(dst_lon))
+    return result.astype('float32')
 
 
 def regrid_aggregation(mon_id, meic_spec, year,
@@ -53,54 +52,41 @@ def regrid_aggregation(mon_id, meic_spec, year,
                        output_res=0.25,
                        lon_min=70.0, lon_max=150.0,
                        lat_min=10.0, lat_max=60.0,
-                       method="conservative"):
+                       method="linear"):
     """
     Regrid and aggregate waste (CEDS), shipping and aviation (HTAP)
-    sectors to the target output grid.
-
-    This replaces the need for pre-computed agg_path files.
-    Previously hardcoded to China 0.25°; now fully parameterized.
+    sectors to the target output grid using scipy interpolation.
 
     Parameters
     ----------
     mon_id : int
-        Month index, 0-based (0 = January, 11 = December).
+        Month index, 0-based (0 = January).
     meic_spec : str
-        MEIC species name (e.g. 'SO2', 'NOx').
+        MEIC species name (e.g. 'NMVOC', 'SO2').
     year : str
         Year as string (e.g. '2017').
     ceds_dir : str
         Directory containing CEDS NetCDF files.
-        Expected pattern: CEDS_Glb_0.5x0.5_anthro_{spec}__monthly_{year}.nc
     htap_dir : str
         Directory containing HTAP NetCDF files.
-        Expected pattern: edgar_HTAPv3_{year}_{spec}.nc
+        Pattern: edgar_HTAPv3_{year}_{spec}.nc
     mapper_path : str
         Path to Integrated_mapper.csv.
     output_res : float, optional
-        Output grid resolution in degrees.
-        Options: 0.05, 0.1, 0.25, 0.5. Default: 0.25.
+        Output resolution in degrees. Default: 0.25.
     lon_min, lon_max : float, optional
-        Longitude range. Default: 70.0, 150.0 (China domain).
+        Longitude range. Default: 70.0, 150.0.
     lat_min, lat_max : float, optional
-        Latitude range. Default: 10.0, 60.0 (China domain).
+        Latitude range. Default: 10.0, 60.0.
     method : str, optional
-        xESMF regridding method. Default: 'conservative'.
+        Interpolation method: 'linear' or 'nearest'. Default: 'linear'.
 
     Returns
     -------
     xr.Dataset
-        Dataset with variables: waste, shipping, aviation, agriculture
+        Dataset with variables: waste, shipping, aviation, agriculture.
         Dimensions: (lat, lon) at target resolution.
     """
-    try:
-        import xesmf as xe
-    except ImportError:
-        raise ImportError(
-            "[CINEI] xesmf is required for regridding.\n"
-            "        Install with: pip install xesmf"
-        )
-
     if output_res not in SUPPORTED_RESOLUTIONS:
         raise ValueError(
             f"[CINEI] Unsupported resolution: {output_res}\n"
@@ -111,112 +97,111 @@ def regrid_aggregation(mon_id, meic_spec, year,
     htap_dir = Path(htap_dir)
 
     # ── Read mapper ───────────────────────────────────────────────────
-    mapper = pd.read_csv(mapper_path)
-    mapper = mapper.set_index('MEIC')
-    par = mapper.loc[meic_spec, 'partition']
-    M   = mapper.loc[meic_spec, 'weight']
-    V   = mapper.loc[meic_spec, 'if VOC']
+    mapper    = pd.read_csv(mapper_path)
+    mapper    = mapper.set_index('MEIC')
+    par       = mapper.loc[meic_spec, 'partition']
+    M         = mapper.loc[meic_spec, 'weight']
+    V         = mapper.loc[meic_spec, 'if VOC']
 
-    # ── Build grids ───────────────────────────────────────────────────
-    ds_out, lon_out, lat_out = build_output_grid(
-        lon_min, lon_max, lat_min, lat_max, output_res
-    )
+    # ── Output grid ───────────────────────────────────────────────────
+    half    = output_res / 2
+    lon_out = np.arange(lon_min + half, lon_max, output_res, dtype=np.float32)
+    lat_out = np.arange(lat_min + half, lat_max, output_res, dtype=np.float32)
+    n_lat   = len(lat_out)
+    n_lon   = len(lon_out)
 
-    # 0.5° grid (CEDS)
-    lon_50 = np.arange(lon_min + 0.25, lon_max + 0.25, 0.5, dtype=np.float32)
-    lat_50 = np.arange(lat_min + 0.25, lat_max + 0.25, 0.5, dtype=np.float32)
-    ds_coarse = xe.util.grid_2d(
-        lon_min + 0.25, lon_max + 0.25, 0.5,
-        lat_min + 0.25, lat_max + 0.25, 0.5
-    )
-
-    # 0.1° grid (HTAP)
-    lon_10 = np.arange(lon_min + 0.05, lon_max + 0.05, 0.1, dtype=np.float32)
-    lat_10 = np.arange(lat_min + 0.05, lat_max + 0.05, 0.1, dtype=np.float32)
-    ds_fine = xe.util.grid_2d(
-        lon_min + 0.05, lon_max + 0.05, 0.1,
-        lat_min + 0.05, lat_max + 0.05, 0.1
-    )
-
-    # ── Grid cell areas ───────────────────────────────────────────────
     from .utils import ll_area
-    area_fine   = ll_area(ds_fine.lat.values,   0.1)
-    area_coarse = ll_area(ds_coarse.lat.values, 0.5)
-
-    n_lat = len(lat_out)
-    n_lon = len(lon_out)
+    lon_2d_out, lat_2d_out = np.meshgrid(lon_out, lat_out)
 
     # ── 1. Waste (from CEDS) ──────────────────────────────────────────
-    mapper_ceds   = mapper.dropna()
-    specs_ceds    = mapper_ceds.index.values
-    ceds_spec     = mapper.loc[meic_spec, 'CEDS'] if meic_spec in specs_ceds else None
+    mapper_ceds = mapper.dropna()
+    ceds_spec   = mapper.loc[meic_spec, 'CEDS'] \
+                  if meic_spec in mapper_ceds.index else None
 
+    waste = np.zeros((n_lat, n_lon), dtype='float32')
     if ceds_spec is not None:
-        ceds_waste_path = ceds_dir / f"CEDS_Glb_0.5x0.5_anthro_{ceds_spec}__monthly_{year}.nc"
-        if ceds_waste_path.exists():
-            DS_wst = xr.open_dataset(str(ceds_waste_path))
-            re_wst = DS_wst['waste'][mon_id].sel(
-                lat=lat_50, lon=lon_50, method="nearest")
-            ds_coarse['wst'] = re_wst * 0.001 * area_coarse * 2678400 * 1000000
-            regridder_cs = xe.Regridder(
-                ds_coarse, ds_out, method, periodic=True, reuse_weights=True)
-            wst_raw = regridder_cs(ds_coarse['wst'].values)
-            waste = wst_raw * par / M if V == 'Y' else wst_raw
+        ceds_path = ceds_dir / \
+            f"CEDS_Glb_0.5x0.5_anthro_{ceds_spec}__monthly_{year}.nc"
+        if ceds_path.exists():
+            DS_wst   = xr.open_dataset(str(ceds_path))
+            lat_50   = DS_wst.lat.values
+            lon_50   = DS_wst.lon.values
+            wst_data = DS_wst['waste'][mon_id].values  # (lat, lon)
+
+            # Convert units
+            lon_2d_50, lat_2d_50 = np.meshgrid(lon_50, lat_50)
+            area_50  = ll_area(lat_2d_50, 0.5)
+            wst_conv = wst_data * 0.001 * area_50 * 2678400 * 1000000
+
+            # Clip to domain
+            lat_mask = (lat_50 >= lat_min) & (lat_50 <= lat_max)
+            lon_mask = (lon_50 >= lon_min) & (lon_50 <= lon_max)
+            lat_src  = lat_50[lat_mask]
+            lon_src  = lon_50[lon_mask]
+            wst_src  = wst_conv[np.ix_(lat_mask, lon_mask)]
+
+            # Regrid
+            wst_raw = _regrid(wst_src, lat_src, lon_src,
+                               lat_out, lon_out, method)
+            waste   = wst_raw * par / M if V == 'Y' else wst_raw
+            DS_wst.close()
         else:
-            print(f"[CINEI] ⚠️  CEDS waste file not found: {ceds_waste_path.name}")
-            waste = np.zeros((n_lat, n_lon), dtype='float32')
-    else:
-        waste = np.zeros((n_lat, n_lon), dtype='float32')
+            print(f"[CINEI] ⚠️  CEDS waste file not found: {ceds_path.name}")
 
-    # ── 2. Shipping (from HTAP) ───────────────────────────────────────
-    htap_path = htap_dir / f"edgar_HTAPv3_{year}_{meic_spec}.nc"
-    if not htap_path.exists():
-        print(f"[CINEI] ⚠️  HTAP file not found: {htap_path.name}")
-        shipping  = np.zeros((n_lat, n_lon), dtype='float32')
-        aviation  = np.zeros((n_lat, n_lon), dtype='float32')
-        agr_htap  = np.zeros((n_lat, n_lon), dtype='float32')
-    else:
-        DS_htap = xr.open_dataset(str(htap_path))
+    # ── 2. HTAP sectors (shipping, aviation, agriculture) ─────────────
+    shipping  = np.zeros((n_lat, n_lon), dtype='float32')
+    aviation  = np.zeros((n_lat, n_lon), dtype='float32')
+    agr_htap  = np.zeros((n_lat, n_lon), dtype='float32')
 
-        # Shipping
-        re_shp = DS_htap['HTAPv3_5_3_Domestic_shipping'][mon_id].sel(
-            lat=lat_10, lon=lon_10, method="nearest")
-        ds_fine['shp'] = re_shp * area_fine
-        regridder_fn = xe.Regridder(
-            ds_fine, ds_out, method, periodic=True, reuse_weights=True)
-        shp_raw  = regridder_fn(ds_fine['shp'].values)
-        shipping = shp_raw / M if V == 'Y' else shp_raw
+    # Look for HTAP file — check both in htap_dir and subdirectories
+    htap_file = htap_dir / f"edgar_HTAPv3_{year}_{meic_spec}.nc"
+    if not htap_file.exists():
+        # Try in subdirectory gridmaps_05x05_emissions_NMVOC/
+        for sub in htap_dir.rglob(f"edgar_HTAPv3_{year}_{meic_spec}.nc"):
+            htap_file = sub
+            break
 
-        # Aviation
-        re_avi = DS_htap['HTAPv3_2_1_Domestic_Aviation'][mon_id].sel(
-            lat=lat_10, lon=lon_10, method="nearest")
-        ds_fine['avi'] = re_avi * area_fine
-        avi_raw  = regridder_fn(ds_fine['avi'].values)
-        aviation = avi_raw / M if V == 'Y' else avi_raw
+    if htap_file.exists():
+        DS_htap  = xr.open_dataset(str(htap_file))
+        lat_10   = DS_htap.lat.values
+        lon_10   = DS_htap.lon.values
+        lat_mask = (lat_10 >= lat_min) & (lat_10 <= lat_max)
+        lon_mask = (lon_10 >= lon_min) & (lon_10 <= lon_max)
+        lat_src  = lat_10[lat_mask]
+        lon_src  = lon_10[lon_mask]
 
-        # Agriculture (outside region, from HTAP)
-        re_agr = DS_htap['HTAPv3_4A_Enteric_Fermentation'][mon_id].sel(
-            lat=lat_10, lon=lon_10, method="nearest") \
-            if 'HTAPv3_4A_Enteric_Fermentation' in DS_htap else \
-            xr.zeros_like(re_avi)
-        ds_fine['agr'] = re_agr * area_fine
-        agr_raw  = regridder_fn(ds_fine['agr'].values)
-        agr_htap = agr_raw / M if V == 'Y' else agr_raw
+        lon_2d_10, lat_2d_10 = np.meshgrid(lon_10, lat_10)
+        area_10  = ll_area(lat_2d_10, 0.1)
 
+        def _regrid_htap(var_name):
+            if var_name not in DS_htap:
+                print(f"[CINEI] ⚠️  HTAP variable not found: {var_name}")
+                return np.zeros((n_lat, n_lon), dtype='float32')
+            data     = DS_htap[var_name][mon_id].values * area_10
+            data_src = data[np.ix_(lat_mask, lon_mask)]
+            raw      = _regrid(data_src, lat_src, lon_src,
+                                lat_out, lon_out, method)
+            return raw / M if V == 'Y' else raw
+
+        shipping = _regrid_htap('HTAPv3_5_3_Domestic_shipping')
+        aviation = _regrid_htap('HTAPv3_2_1_Domestic_Aviation')
         DS_htap.close()
+    else:
+        print(f"[CINEI] ⚠️  HTAP file not found: "
+              f"edgar_HTAPv3_{year}_{meic_spec}.nc")
+        print(f"[CINEI]    Searched in: {htap_dir}")
 
     # ── Build output Dataset ──────────────────────────────────────────
     ds = xr.Dataset(
         {
-            "waste":       (("lat", "lon"), waste.astype('float32')),
-            "shipping":    (("lat", "lon"), shipping.astype('float32')),
-            "aviation":    (("lat", "lon"), aviation.astype('float32')),
-            "agriculture": (("lat", "lon"), agr_htap.astype('float32')),
+            "waste":       (("lat", "lon"), waste),
+            "shipping":    (("lat", "lon"), shipping),
+            "aviation":    (("lat", "lon"), aviation),
+            "agriculture": (("lat", "lon"), agr_htap),
         },
         coords={'lon': lon_out, 'lat': lat_out}
     )
     ds.attrs['resolution'] = f"{output_res}°"
     ds.attrs['year']       = year
     ds.attrs['month_idx']  = mon_id
-
     return ds

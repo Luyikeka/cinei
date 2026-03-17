@@ -28,7 +28,6 @@ setup(
         "requests",
         "tqdm",
         "scipy",
-        "xesmf",
     ],
     python_requires=">=3.7",
     author="Yijuan Zhang",
