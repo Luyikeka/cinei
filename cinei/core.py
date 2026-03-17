@@ -52,6 +52,62 @@ _MONTH_NAME = {
 }
 _MONTH_STR = {m: f"{m:02d}" for m in range(1, 13)}
 
+# Reverse mapping: any string format → integer month
+_MONTH_TO_INT = {
+    # Zero-padded strings
+    "01": 1,  "02": 2,  "03": 3,  "04": 4,
+    "05": 5,  "06": 6,  "07": 7,  "08": 8,
+    "09": 9,  "10": 10, "11": 11, "12": 12,
+    # Plain integers as strings
+    "1": 1,  "2": 2,  "3": 3,  "4": 4,
+    "5": 5,  "6": 6,  "7": 7,  "8": 8,
+    "9": 9,
+    # Month name abbreviations
+    "jan": 1,  "feb": 2,  "mar": 3,  "apr": 4,
+    "may": 5,  "jun": 6,  "jul": 7,  "aug": 8,
+    "sep": 9,  "oct": 10, "nov": 11, "dec": 12,
+    # Full month names
+    "january": 1,  "february": 2,  "march": 3,    "april": 4,
+    "may": 5,      "june": 6,      "july": 7,      "august": 8,
+    "september": 9,"october": 10,  "november": 11, "december": 12,
+}
+
+
+def _parse_month(month):
+    """
+    Parse any month input to integer 1-12.
+
+    Accepts:
+    - int       : 1, 2, ... 12
+    - str zero-padded : '01', '02', ... '12'
+    - str plain : '1', '2', ... '12'
+    - str name  : 'Jan', 'January', 'jan', 'JAN'
+
+    Returns
+    -------
+    int : month as 1-12
+    """
+    if isinstance(month, int):
+        if month not in range(1, 13):
+            raise ValueError(
+                f"[CINEI] Invalid month: {month}. Must be 1-12."
+            )
+        return month
+
+    if isinstance(month, str):
+        key = month.strip().lower()
+        if key in _MONTH_TO_INT:
+            return _MONTH_TO_INT[key]
+
+    raise ValueError(
+        f"[CINEI] Cannot parse month: '{month}'\n"
+        f"        Accepted formats:\n"
+        f"          Integer   : 1, 2, ... 12\n"
+        f"          Zero-padded: '01', '02', ... '12'\n"
+        f"          Abbreviated: 'Jan', 'Feb', ... 'Dec'\n"
+        f"          Full name  : 'January', 'February', ..."
+    )
+
 # ── CEDS file pattern ─────────────────────────────────────────────────────────
 # {outer_dir}/CEDS_Glb_0.5x0.5_anthro_{ceds_spec}__monthly_{year}.nc
 _CEDS_PATTERN = "CEDS_Glb_0.5x0.5_anthro_{spec}__monthly_{year}.nc"
@@ -211,12 +267,12 @@ def emis_union(species, month, year,
             f"        Available: {SUPPORTED_RESOLUTIONS}"
         )
 
-    # ── Auto-convert month ────────────────────────────────────────────
-    if month not in range(1, 13):
-        raise ValueError(f"[CINEI] Invalid month: {month}. Must be 1-12.")
-    mon_name = _MONTH_NAME[month]
-    mon_id   = month - 1
-    mon_str  = _MONTH_STR[month]
+    # ── Auto-convert month (accepts int, '01', 'Jan', 'January') ────────
+    month    = _parse_month(month)
+    mon_name = _MONTH_NAME[month]   # e.g. 'Jan'
+    mon_id   = month - 1            # 0-based xarray index
+    mon_str  = _MONTH_STR[month]    # e.g. '01'
+    print(f"[CINEI] Month      : {mon_str} ({mon_name})")
 
     # ── Validate and resolve sectors ─────────────────────────────────
     if sectors == "all":
