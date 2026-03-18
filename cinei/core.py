@@ -393,31 +393,9 @@ def emis_union(species, month, year,
         alldoshp = ds_agg['shipping'].values
         all_avi  = ds_agg['aviation'].values
         doagr    = ds_agg['agriculture'].values
-        # Clip agriculture to outside China using manual masking
-        # (avoids rioxarray x/y dim requirement)
-        from rasterio.features import geometry_mask
-        from rasterio.transform import from_bounds
-        import affine
-
-        lon_out = ds_agg.lon.values
-        lat_out = ds_agg.lat.values
-        n_lat_  = len(lat_out)
-        n_lon_  = len(lon_out)
-
-        res_ = float(lon_out[1] - lon_out[0]) if len(lon_out) > 1 else output_res
-        transform_ = from_bounds(
-            lon_out[0] - res_/2, lat_out[0] - res_/2,
-            lon_out[-1] + res_/2, lat_out[-1] + res_/2,
-            n_lon_, n_lat_
-        )
-        china_mask = geometry_mask(
-            mChina.geometry,
-            transform=transform_,
-            invert=True,
-            out_shape=(n_lat_, n_lon_)
-        )
-        doagr_clip = np.where(china_mask, doagr, 0.0)
-        dms_agr    = doagr - doagr_clip
+        # Agriculture: use HTAP full domain — no clipping
+        # HTAP agriculture covers both inner and outer domain consistently
+        dms_agr  = doagr
     else:
         print(f"[CINEI] ⚠️  agg_dir not provided → "
               f"waste/shipping/aviation set to zero.")
@@ -458,9 +436,12 @@ def emis_union(species, month, year,
     tpt_union = (np.nan_to_num(outer_clipped['transportation'], nan=0) + tpt
                if 'transportation' in active_sectors
                else np.zeros((n_lat, n_lon), dtype='float32'))
-    act_union = (np.nan_to_num(outer_clipped['agriculture'],    nan=0) + dms_agr
-               if 'agriculture'    in active_sectors
-               else np.zeros((n_lat, n_lon), dtype='float32'))
+    # Agriculture: use HTAP for entire domain (no clipping)
+    # MEIC agriculture contains NaN inside China → unreliable
+    # HTAP provides consistent coverage for both inner and outer domain
+    act_union = (doagr
+                 if 'agriculture' in active_sectors
+                 else np.zeros((n_lat, n_lon), dtype='float32'))
     swd_union = allwst if 'waste'    in active_sectors else np.zeros((n_lat, n_lon), dtype='float32')
     avi_union = all_avi if 'aviation' in active_sectors else np.zeros((n_lat, n_lon), dtype='float32')
     sum_union = (pwr_union + res_union + idt_union + shp_union +

@@ -47,6 +47,102 @@ def _regrid(data, src_lat, src_lon, dst_lat, dst_lon, method='linear'):
     return result.astype('float32')
 
 
+def _regrid_conservative(data, src_lat, src_lon,
+                         dst_lat, dst_lon, dst_res):
+    """
+    Conservative regridding: sum source cells into destination cells.
+    Preserves total emissions (ton/month).
+
+    For HTAP data: all variables are ton/month at 0.1°.
+    Summing 0.1° cells → 0.25° cell preserves total.
+
+    Parameters
+    ----------
+    data : np.ndarray (n_src_lat, n_src_lon)
+        Source data in ton/month at source resolution.
+    src_lat, src_lon : 1D arrays
+        Source grid center coordinates (must be sorted ascending).
+    dst_lat, dst_lon : 1D arrays
+        Destination grid center coordinates.
+    dst_res : float
+        Destination resolution in degrees.
+
+    Returns
+    -------
+    np.ndarray (n_dst_lat, n_dst_lon)
+        Aggregated data in ton/month at destination resolution.
+    """
+    n_dst_lat = len(dst_lat)
+    n_dst_lon = len(dst_lon)
+    result    = np.zeros((n_dst_lat, n_dst_lon), dtype='float32')
+    half      = dst_res / 2.0
+
+    # Pre-compute source index ranges for each destination cell
+    for i, dlat in enumerate(dst_lat):
+        lat_idx = np.where(
+            (src_lat >= dlat - half) & (src_lat < dlat + half))[0]
+        if len(lat_idx) == 0:
+            continue
+        for j, dlon in enumerate(dst_lon):
+            lon_idx = np.where(
+                (src_lon >= dlon - half) & (src_lon < dlon + half))[0]
+            if len(lon_idx) == 0:
+                continue
+            result[i, j] = np.nansum(
+                data[lat_idx[0]:lat_idx[-1]+1,
+                     lon_idx[0]:lon_idx[-1]+1])
+
+    return result
+
+
+def _regrid_conservative(data, src_lat, src_lon,
+                         dst_lat, dst_lon, dst_res):
+    """
+    Conservative regridding: sum source cells into destination cells.
+    Preserves total emissions (ton/month).
+
+    For HTAP data: all variables are ton/month at 0.1°.
+    Summing 0.1° cells → 0.25° cell preserves total.
+
+    Parameters
+    ----------
+    data : np.ndarray (n_src_lat, n_src_lon)
+        Source data in ton/month at source resolution.
+    src_lat, src_lon : 1D arrays
+        Source grid center coordinates (must be sorted ascending).
+    dst_lat, dst_lon : 1D arrays
+        Destination grid center coordinates.
+    dst_res : float
+        Destination resolution in degrees.
+
+    Returns
+    -------
+    np.ndarray (n_dst_lat, n_dst_lon)
+        Aggregated data in ton/month at destination resolution.
+    """
+    n_dst_lat = len(dst_lat)
+    n_dst_lon = len(dst_lon)
+    result    = np.zeros((n_dst_lat, n_dst_lon), dtype='float32')
+    half      = dst_res / 2.0
+
+    # Pre-compute source index ranges for each destination cell
+    for i, dlat in enumerate(dst_lat):
+        lat_idx = np.where(
+            (src_lat >= dlat - half) & (src_lat < dlat + half))[0]
+        if len(lat_idx) == 0:
+            continue
+        for j, dlon in enumerate(dst_lon):
+            lon_idx = np.where(
+                (src_lon >= dlon - half) & (src_lon < dlon + half))[0]
+            if len(lon_idx) == 0:
+                continue
+            result[i, j] = np.nansum(
+                data[lat_idx[0]:lat_idx[-1]+1,
+                     lon_idx[0]:lon_idx[-1]+1])
+
+    return result
+
+
 def regrid_aggregation(mon_id, meic_spec, year,
                        ceds_dir, htap_dir, mapper_path,
                        output_res=0.25,
@@ -170,21 +266,24 @@ def regrid_aggregation(mon_id, meic_spec, year,
         lat_src  = lat_10[lat_mask]
         lon_src  = lon_10[lon_mask]
 
-        lon_2d_10, lat_2d_10 = np.meshgrid(lon_10, lat_10)
-        area_10  = ll_area(lat_2d_10, 0.1)
-
         def _regrid_htap(var_name):
             if var_name not in DS_htap:
                 print(f"[CINEI] ⚠️  HTAP variable not found: {var_name}")
                 return np.zeros((n_lat, n_lon), dtype='float32')
-            data     = DS_htap[var_name][mon_id].values * area_10
+            # HTAP unit: ton/month/grid at 0.1°
+            # Regrid to output resolution conservatively (sum, not interpolate)
+            data     = DS_htap[var_name][mon_id].values  # no area multiplication
             data_src = data[np.ix_(lat_mask, lon_mask)]
-            raw      = _regrid(data_src, lat_src, lon_src,
-                                lat_out, lon_out, method)
+            raw      = _regrid_conservative(data_src, lat_src, lon_src,
+                                             lat_out, lon_out, output_res)
             return raw / M if V == 'Y' else raw
 
         shipping = _regrid_htap('HTAPv3_5_3_Domestic_shipping')
         aviation = _regrid_htap('HTAPv3_2_1_Domestic_Aviation')
+        waste    = _regrid_htap('HTAPv3_7_Waste')
+        agr_live = _regrid_htap('HTAPv3_8_2_Agriculture_livestock')
+        agr_crop = _regrid_htap('HTAPv3_8_3_Agriculture_crops')
+        agr_htap = agr_live + agr_crop
         DS_htap.close()
     else:
         print(f"[CINEI] ⚠️  HTAP file not found: "
@@ -197,7 +296,7 @@ def regrid_aggregation(mon_id, meic_spec, year,
             "waste":       (("lat", "lon"), waste),
             "shipping":    (("lat", "lon"), shipping),
             "aviation":    (("lat", "lon"), aviation),
-            "agriculture": (("lat", "lon"), agr_htap),
+            "agriculture": (("lat", "lon"), agr_htap),  # full domain, no clipping
         },
         coords={'lon': lon_out, 'lat': lat_out}
     )
