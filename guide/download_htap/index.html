@@ -1547,7 +1547,7 @@ Understanding each argument once lets you use any inventory download function.</
 <h3 id="save_dir"><code>save_dir</code></h3>
 <p><strong>Required.</strong> Directory where files will be saved.
 Created automatically if it does not exist.
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">save_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/HTAP&#39;</span>          <span class="c1"># DKRZ</span>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="n">save_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/HTAP&#39;</span>          <span class="c1"># DKRZ</span>
 <a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">save_dir</span> <span class="o">=</span> <span class="s1">&#39;/mnt/hgfs/seafile/testdata/HTAP&#39;</span> <span class="c1"># local VM</span>
 </code></pre></div></p>
 <hr />
@@ -1744,7 +1744,7 @@ to avoid re-downloading the large zip file each time.</p>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-9-1" name="__codelineno-9-1" href="#__codelineno-9-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cinei</span>
 <a id="__codelineno-9-2" name="__codelineno-9-2" href="#__codelineno-9-2"></a>
 <a id="__codelineno-9-3" name="__codelineno-9-3" href="#__codelineno-9-3"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_ceds</span><span class="p">(</span>
-<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">save_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/CEDS&#39;</span><span class="p">,</span>
+<a id="__codelineno-9-4" name="__codelineno-9-4" href="#__codelineno-9-4"></a>    <span class="n">save_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/CEDS&#39;</span><span class="p">,</span>
 <a id="__codelineno-9-5" name="__codelineno-9-5" href="#__codelineno-9-5"></a>    <span class="n">species</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NMVOC&#39;</span><span class="p">,</span> <span class="s1">&#39;NOx&#39;</span><span class="p">,</span> <span class="s1">&#39;SO2&#39;</span><span class="p">],</span>
 <a id="__codelineno-9-6" name="__codelineno-9-6" href="#__codelineno-9-6"></a>    <span class="n">keep_tar</span> <span class="o">=</span> <span class="kc">False</span><span class="p">,</span>
 <a id="__codelineno-9-7" name="__codelineno-9-7" href="#__codelineno-9-7"></a><span class="p">)</span>
@@ -1756,13 +1756,13 @@ Sample data (2017 Jan &amp; Jul) publicly available on Zenodo.
 <a href="https://doi.org/10.5281/zenodo.15039737">DOI: 10.5281/zenodo.15039737</a>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-10-1" name="__codelineno-10-1" href="#__codelineno-10-1"></a><span class="c1"># Download sample data</span>
 <a id="__codelineno-10-2" name="__codelineno-10-2" href="#__codelineno-10-2"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_meic_sample</span><span class="p">(</span>
-<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">save_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/MEIC&#39;</span><span class="p">,</span>
+<a id="__codelineno-10-3" name="__codelineno-10-3" href="#__codelineno-10-3"></a>    <span class="n">save_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/MEIC&#39;</span><span class="p">,</span>
 <a id="__codelineno-10-4" name="__codelineno-10-4" href="#__codelineno-10-4"></a>    <span class="n">months</span>   <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;jan&#39;</span><span class="p">,</span> <span class="s1">&#39;jul&#39;</span><span class="p">],</span>
 <a id="__codelineno-10-5" name="__codelineno-10-5" href="#__codelineno-10-5"></a><span class="p">)</span>
 <a id="__codelineno-10-6" name="__codelineno-10-6" href="#__codelineno-10-6"></a>
 <a id="__codelineno-10-7" name="__codelineno-10-7" href="#__codelineno-10-7"></a><span class="c1"># Check which files are present</span>
 <a id="__codelineno-10-8" name="__codelineno-10-8" href="#__codelineno-10-8"></a><span class="n">cinei</span><span class="o">.</span><span class="n">check_meic_files</span><span class="p">(</span>
-<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">meic_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/MEIC/2017&#39;</span><span class="p">,</span>
+<a id="__codelineno-10-9" name="__codelineno-10-9" href="#__codelineno-10-9"></a>    <span class="n">meic_dir</span> <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/MEIC/2017&#39;</span><span class="p">,</span>
 <a id="__codelineno-10-10" name="__codelineno-10-10" href="#__codelineno-10-10"></a>    <span class="n">year</span>     <span class="o">=</span> <span class="mi">2017</span><span class="p">,</span>
 <a id="__codelineno-10-11" name="__codelineno-10-11" href="#__codelineno-10-11"></a>    <span class="n">species</span>  <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NOx&#39;</span><span class="p">,</span> <span class="s1">&#39;SO2&#39;</span><span class="p">],</span>
 <a id="__codelineno-10-12" name="__codelineno-10-12" href="#__codelineno-10-12"></a><span class="p">)</span>
@@ -1776,7 +1776,7 @@ Sample data (2017 Jan &amp; Jul) publicly available on Zenodo.
 <a href="https://edgar.jrc.ec.europa.eu/dataset_ap81">edgar.jrc.ec.europa.eu/dataset_ap81</a>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-11-1" name="__codelineno-11-1" href="#__codelineno-11-1"></a><span class="c1"># Download full year</span>
 <a id="__codelineno-11-2" name="__codelineno-11-2" href="#__codelineno-11-2"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_edgar</span><span class="p">(</span>
-<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">save_dir</span>  <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/EDGAR&#39;</span><span class="p">,</span>
+<a id="__codelineno-11-3" name="__codelineno-11-3" href="#__codelineno-11-3"></a>    <span class="n">save_dir</span>  <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/EDGAR&#39;</span><span class="p">,</span>
 <a id="__codelineno-11-4" name="__codelineno-11-4" href="#__codelineno-11-4"></a>    <span class="n">species</span>   <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NOx&#39;</span><span class="p">,</span> <span class="s1">&#39;SO2&#39;</span><span class="p">],</span>
 <a id="__codelineno-11-5" name="__codelineno-11-5" href="#__codelineno-11-5"></a>    <span class="n">years</span>     <span class="o">=</span> <span class="p">[</span><span class="mi">2017</span><span class="p">],</span>
 <a id="__codelineno-11-6" name="__codelineno-11-6" href="#__codelineno-11-6"></a>    <span class="n">data_type</span> <span class="o">=</span> <span class="s1">&#39;fluxes&#39;</span><span class="p">,</span>
@@ -1784,7 +1784,7 @@ Sample data (2017 Jan &amp; Jul) publicly available on Zenodo.
 <a id="__codelineno-11-8" name="__codelineno-11-8" href="#__codelineno-11-8"></a>
 <a id="__codelineno-11-9" name="__codelineno-11-9" href="#__codelineno-11-9"></a><span class="c1"># Download specific month only</span>
 <a id="__codelineno-11-10" name="__codelineno-11-10" href="#__codelineno-11-10"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_edgar_monthly</span><span class="p">(</span>
-<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">save_dir</span>  <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/EDGAR&#39;</span><span class="p">,</span>
+<a id="__codelineno-11-11" name="__codelineno-11-11" href="#__codelineno-11-11"></a>    <span class="n">save_dir</span>  <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/EDGAR&#39;</span><span class="p">,</span>
 <a id="__codelineno-11-12" name="__codelineno-11-12" href="#__codelineno-11-12"></a>    <span class="n">species</span>   <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NOx&#39;</span><span class="p">],</span>
 <a id="__codelineno-11-13" name="__codelineno-11-13" href="#__codelineno-11-13"></a>    <span class="n">year</span>      <span class="o">=</span> <span class="mi">2017</span><span class="p">,</span>
 <a id="__codelineno-11-14" name="__codelineno-11-14" href="#__codelineno-11-14"></a>    <span class="n">month</span>     <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -1799,7 +1799,7 @@ Sample data (2017 Jan &amp; Jul) publicly available on Zenodo.
 <a id="__codelineno-12-3" name="__codelineno-12-3" href="#__codelineno-12-3"></a>
 <a id="__codelineno-12-4" name="__codelineno-12-4" href="#__codelineno-12-4"></a><span class="c1"># Download full dataset (all years 2000–2018)</span>
 <a id="__codelineno-12-5" name="__codelineno-12-5" href="#__codelineno-12-5"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_htap</span><span class="p">(</span>
-<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">save_dir</span>   <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/HTAP&#39;</span><span class="p">,</span>
+<a id="__codelineno-12-6" name="__codelineno-12-6" href="#__codelineno-12-6"></a>    <span class="n">save_dir</span>   <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/HTAP&#39;</span><span class="p">,</span>
 <a id="__codelineno-12-7" name="__codelineno-12-7" href="#__codelineno-12-7"></a>    <span class="n">species</span>    <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NMVOC&#39;</span><span class="p">,</span> <span class="s1">&#39;NOx&#39;</span><span class="p">,</span> <span class="s1">&#39;SO2&#39;</span><span class="p">],</span>
 <a id="__codelineno-12-8" name="__codelineno-12-8" href="#__codelineno-12-8"></a>    <span class="n">resolution</span> <span class="o">=</span> <span class="s1">&#39;05x05&#39;</span><span class="p">,</span>
 <a id="__codelineno-12-9" name="__codelineno-12-9" href="#__codelineno-12-9"></a>    <span class="n">data_type</span>  <span class="o">=</span> <span class="s1">&#39;emissions&#39;</span><span class="p">,</span>
@@ -1809,7 +1809,7 @@ Sample data (2017 Jan &amp; Jul) publicly available on Zenodo.
 <a id="__codelineno-12-13" name="__codelineno-12-13" href="#__codelineno-12-13"></a>
 <a id="__codelineno-12-14" name="__codelineno-12-14" href="#__codelineno-12-14"></a><span class="c1"># Download one specific month</span>
 <a id="__codelineno-12-15" name="__codelineno-12-15" href="#__codelineno-12-15"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_htap_monthly</span><span class="p">(</span>
-<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>    <span class="n">save_dir</span>    <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/HTAP&#39;</span><span class="p">,</span>
+<a id="__codelineno-12-16" name="__codelineno-12-16" href="#__codelineno-12-16"></a>    <span class="n">save_dir</span>    <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/HTAP&#39;</span><span class="p">,</span>
 <a id="__codelineno-12-17" name="__codelineno-12-17" href="#__codelineno-12-17"></a>    <span class="n">species</span>     <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NMVOC&#39;</span><span class="p">],</span>
 <a id="__codelineno-12-18" name="__codelineno-12-18" href="#__codelineno-12-18"></a>    <span class="n">year</span>        <span class="o">=</span> <span class="mi">2017</span><span class="p">,</span>
 <a id="__codelineno-12-19" name="__codelineno-12-19" href="#__codelineno-12-19"></a>    <span class="n">month</span>       <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -1832,7 +1832,7 @@ Output:
 </code></pre></div></p>
 <p><strong>Step 2 — Download January 2017:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-15-1" name="__codelineno-15-1" href="#__codelineno-15-1"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_htap_monthly</span><span class="p">(</span>
-<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="n">save_dir</span>    <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/HTAP&#39;</span><span class="p">,</span>
+<a id="__codelineno-15-2" name="__codelineno-15-2" href="#__codelineno-15-2"></a>    <span class="n">save_dir</span>    <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/HTAP&#39;</span><span class="p">,</span>
 <a id="__codelineno-15-3" name="__codelineno-15-3" href="#__codelineno-15-3"></a>    <span class="n">species</span>     <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NMVOC&#39;</span><span class="p">],</span>
 <a id="__codelineno-15-4" name="__codelineno-15-4" href="#__codelineno-15-4"></a>    <span class="n">year</span>        <span class="o">=</span> <span class="mi">2017</span><span class="p">,</span>
 <a id="__codelineno-15-5" name="__codelineno-15-5" href="#__codelineno-15-5"></a>    <span class="n">month</span>       <span class="o">=</span> <span class="mi">1</span><span class="p">,</span>
@@ -1843,7 +1843,7 @@ Output:
 </code></pre></div></p>
 <p><strong>Step 3 — Reuse annual file to extract another month:</strong>
 <div class="highlight"><pre><span></span><code><a id="__codelineno-16-1" name="__codelineno-16-1" href="#__codelineno-16-1"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_htap_monthly</span><span class="p">(</span>
-<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">save_dir</span>    <span class="o">=</span> <span class="s1">&#39;/work/bb1554/data/HTAP&#39;</span><span class="p">,</span>
+<a id="__codelineno-16-2" name="__codelineno-16-2" href="#__codelineno-16-2"></a>    <span class="n">save_dir</span>    <span class="o">=</span> <span class="s1">&#39;/work/b123456/data/HTAP&#39;</span><span class="p">,</span>
 <a id="__codelineno-16-3" name="__codelineno-16-3" href="#__codelineno-16-3"></a>    <span class="n">species</span>     <span class="o">=</span> <span class="p">[</span><span class="s1">&#39;NMVOC&#39;</span><span class="p">],</span>
 <a id="__codelineno-16-4" name="__codelineno-16-4" href="#__codelineno-16-4"></a>    <span class="n">year</span>        <span class="o">=</span> <span class="mi">2017</span><span class="p">,</span>
 <a id="__codelineno-16-5" name="__codelineno-16-5" href="#__codelineno-16-5"></a>    <span class="n">month</span>       <span class="o">=</span> <span class="mi">7</span><span class="p">,</span>
@@ -1852,7 +1852,7 @@ Output:
 <a id="__codelineno-16-8" name="__codelineno-16-8" href="#__codelineno-16-8"></a><span class="p">)</span>
 </code></pre></div></p>
 <p><strong>Output files:</strong>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>/work/bb1554/data/HTAP/
+<div class="highlight"><pre><span></span><code><a id="__codelineno-17-1" name="__codelineno-17-1" href="#__codelineno-17-1"></a>/work/b123456/data/HTAP/
 <a id="__codelineno-17-2" name="__codelineno-17-2" href="#__codelineno-17-2"></a>├── gridmaps_05x05_emissions_NMVOC/
 <a id="__codelineno-17-3" name="__codelineno-17-3" href="#__codelineno-17-3"></a>│   └── edgar_HTAPv3_2017_NMVOC.nc     ← annual file (if keep_annual=True)
 <a id="__codelineno-17-4" name="__codelineno-17-4" href="#__codelineno-17-4"></a>├── HTAP_v3_NMVOC_05x05_2017_01_Jan_emissions.nc   ← monthly [lat, lon]
