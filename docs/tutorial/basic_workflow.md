@@ -1,28 +1,24 @@
 # Basic Workflow Tutorial
 
-This tutorial shows a complete CINEI workflow: download data, integrate
-inventories, verify regridding, visualize results, and run VOC speciation.
-
----
+This tutorial shows a complete workflow: download data, integrate inventories,
+visualize the output, and optionally run VOC speciation.
 
 ## Step 1: Install CINEI
 ```bash
 pip install cinei
 ```
 
----
-
 ## Step 2: Download input data
 ```python
 import cinei
 
-# Download CEDS NMVOC (global background)
+# Download CEDS NMVOC
 cinei.download_ceds(
     save_dir='/work/bb1554/data/CEDS',
     species=['NMVOC']
 )
 
-# Download HTAP NMVOC January 2017 (aggregated sectors)
+# Download HTAP NMVOC January 2017
 cinei.download_htap_monthly(
     save_dir='/work/bb1554/data/HTAP',
     species=['NMVOC'],
@@ -31,253 +27,133 @@ cinei.download_htap_monthly(
     keep_annual=True
 )
 
-# Download MEIC sample data (regional inner inventory)
+# Download MEIC sample data
 cinei.download_meic_sample(
     save_dir='/work/bb1554/data/MEIC',
     months=['jan']
 )
 ```
 
----
-
-## Step 3: Select region of interest
-
-CINEI provides built-in region presets. Call `list_regions()` to see all:
+## Step 3: Check MEIC files
 ```python
-cinei.list_regions()
-```
-
-Output:
-```
-[CINEI] Built-in region presets:
-  Name             Lon min  Lon max  Lat min  Lat max
-  -------------------------------------------------------
-  China              70.0    150.0     10.0     60.0
-  India              65.0    100.0      5.0     40.0
-  Ncp               112.0    120.0     35.0     42.0
-  Beijing           114.0    118.5     38.5     42.0
-  ...
-```
-
-Three ways to define your region:
-```python
-# Option A: built-in name (recommended)
-region = 'China'
-region = 'Beijing'
-region = 'NCP'       # North China Plain
-region = 'Germany'
-
-# Option B: manual bounding box
-cinei.emis_union(...,
-    global_domain = False,
-    lon_min = 100.0, lon_max = 130.0,
-    lat_min = 20.0,  lat_max = 45.0,
+result = cinei.check_meic_files(
+    meic_dir='/work/bb1554/data/MEIC',
+    year=2017,
+    species=['NMVOC'],
+    months=[1]
 )
-
-# Option C: global domain
-cinei.emis_union(..., global_domain=True)
+print("Missing:", result['missing'])
 ```
 
----
-
-## Step 4: Run emission integration
+## Step 4: Run integration
 ```python
 output = cinei.emis_union(
-    species    = 'NMVOC',   # single species name, auto-mapped
-    month      = 1,         # integer 1-12, auto-converts to Jan/01/idx
-    year       = 2017,
-    outer_dir  = '/work/bb1554/data/CEDS',   # global background
-    inner_dir  = '/work/bb1554/data/MEIC',   # regional inventory
-    save_dir   = '/work/bb1554/output/cinei',
-    agg_dir    = '/work/bb1554/data/HTAP',   # aggregated sectors
-    region     = 'China',
-    output_res = 0.25,      # 0.05, 0.1, 0.25, or 0.5 degrees
+    species  = 'NMVOC',
+    month    = 1,
+    year     = 2017,
+    outer_dir= '/work/bb1554/data/CEDS',
+    inner_dir= '/work/bb1554/data/MEIC',
+    save_dir = '/work/bb1554/output/cinei',
+    agg_dir  = '/work/bb1554/data/HTAP',
+    region   = 'China',
+    output_res = 0.25,
 )
+print("Output:", output)
 ```
 
----
-
-## Step 5: Verify regridding conservation
-
-CINEI automatically prints a conservation check table when regridding
-HTAP sectors. This verifies that total emissions are preserved exactly
-when converting from 0.1° to the output resolution.
+During integration, CINEI automatically prints a **conservation check table**
+to verify that regridding preserves total emissions:
 ```
 [CINEI] ── Regridding Conservation Check ────────────────
 [CINEI] Sector          Src total    Dst total    Ratio  Status
-[CINEI] ------------------------------------------------------------
+[CINEI] -----------------------------------------------------------
 [CINEI] aviation           459.56       459.56   1.0000  ✅
 [CINEI] waste            86051.38     86051.38   1.0000  ✅
 [CINEI] agriculture     260433.30    260433.31   1.0000  ✅
-[CINEI] shipping          9474.11      9474.11   1.0000  ✅
-[CINEI] ------------------------------------------------------------
-[CINEI] Note: ratio=1.0 means total emissions are exactly
-[CINEI]       conserved from source to target resolution.
+[CINEI] shipping          9474.11      9474.11   1.0000  ✅  (CEDS ships added separately)
 ```
 
-### What the conservation ratio means
+!!! tip
+    A ratio of 1.0000 confirms that total emissions are exactly conserved
+    during regridding from 0.1° to 0.25°. Any ratio deviating from 1.0
+    indicates a regridding issue that should be investigated.
 
-The **conservative regridding** method sums all 0.1° source grid cells
-that fall within each destination grid cell (e.g. 0.25°). This ensures
-that total emissions in ton/month are exactly preserved — no artificial
-creation or loss of emissions.
-
-| Ratio | Meaning |
-|-------|---------|
-| `1.0000` | ✅ Perfect conservation — regridding is correct |
-| `< 0.99` | ⚠️  Emissions lost — check domain boundaries |
-| `> 1.01` | ⚠️  Emissions gained — check for overlapping cells |
-
-!!! note "Shipping note"
-    The shipping conservation ratio compares only the HTAP domestic
-    shipping component. In the final output, CEDS international shipping
-    (outside China) is also added in `emis_union`, so the final shipping
-    total will be larger than the HTAP-only source total.
-
-!!! tip "Disable check"
-    To suppress the conservation table (e.g. in batch processing):
-```python
-    # Pass check_conservation=False to regrid_aggregation
-    # via the regridding module directly
-    from cinei.regridding import regrid_aggregation
-    ds = regrid_aggregation(..., check_conservation=False)
-```
-
----
-
-## Step 6: Visualize results
-
-### Plot all sectors at once
+## Step 5: Visualize all sectors
 ```python
 fig = cinei.cinei_plot(
     output,
-    log_scale = True,       # log scale recommended for emission maps
-    cmap      = 'YlOrRd',   # colormap
-    save_path = '/work/bb1554/output/CINEI_2017_Jan_NMVOC_sectors.png'
+    log_scale  = True,
+    save_path  = '/work/bb1554/output/cinei/CINEI_2017_Jan_NMVOC_sectors.png'
 )
 ```
 
-This generates a 3×3 panel showing all 8 emission sectors plus total sum,
-with the total emission for each sector in the subplot title.
+This generates a 3×3 panel showing all 8 sectors and the total sum,
+each with their emission totals in the title.
 
-![CINEI sector plot](../assets/CINEI_2017_Jan_NMVOC_final.png)
+## Step 5b: NMVOC speciation *(optional)*
 
-### Plot a single variable
+!!! note
+    This step is **not required** for standard CINEI integration.
+    Run speciation only if your atmospheric model (e.g. WRF-Chem)
+    requires individual VOC lumped species (e.g. MOZART mechanism).
 ```python
-fig = cinei.plot_emission_map(
-    file_path = output,
-    variable  = 'sum',
-    cmap      = 'hot_r',
-    title     = 'CINEI NMVOC Total — January 2017',
-    save_path = '/work/bb1554/output/CINEI_2017_Jan_NMVOC_sum.png'
-)
-```
-
-### Plot options
-
-| Argument | Options | Default |
-|----------|---------|---------|
-| `log_scale` | `True`, `False` | `True` |
-| `cmap` | any matplotlib colormap | `'YlOrRd'` |
-| `sectors` | list of sector names | all sectors |
-| `vmax_percentile` | 1–100 | `99` |
-
----
-
-## Step 7: VOC speciation (NMVOC only)
-
-For NMVOC runs, disaggregate total NMVOC into lumped model species
-(MOZART mechanism):
-```python
-# Run speciation on NMVOC output
-outputs = cinei.nmvoc_speciation(
+# Disaggregate total NMVOC into lumped model species
+speciated_files = cinei.nmvoc_speciation(
     nmvoc_nc_path = output,
-    save_dir      = '/work/bb1554/output/voc_speciated/',
+    save_dir      = '/work/bb1554/output/cinei/voc_speciated/',
 )
+
+print(f"Generated {len(speciated_files)} speciated files")
+# One NetCDF per lumped species (e.g. BIGALK, BIGENE, CH2O, ...)
 ```
 
-Output — one NetCDF per lumped species (18 species total):
+Each output file contains the same 8 sector variables as the NMVOC file,
+but for a single lumped VOC species. The files are named:
 ```
-CINEI_2017_Jan_BENZENE_0p25deg_China.nc
 CINEI_2017_Jan_BIGALK_0p25deg_China.nc
-CINEI_2017_Jan_C2H4_0p25deg_China.nc
-CINEI_2017_Jan_TOLUENE_0p25deg_China.nc
-... (18 files total)
+CINEI_2017_Jan_BIGENE_0p25deg_China.nc
+CINEI_2017_Jan_CH2O_0p25deg_China.nc
+...
 ```
 
-Speciate only selected sectors:
+!!! tip
+    Use `sectors` argument to speciate only specific sectors:
 ```python
-cinei.nmvoc_speciation(
-    nmvoc_nc_path = output,
-    save_dir      = '/work/bb1554/output/voc_speciated/',
-    sectors       = ['energy', 'transportation', 'industry']
-)
+    cinei.nmvoc_speciation(
+        nmvoc_nc_path = output,
+        save_dir      = '/work/bb1554/output/voc_speciated/',
+        sectors       = ['energy', 'transportation', 'industry']
+    )
 ```
 
-Or trigger automatically inside `emis_union`:
+## Step 6: Grid area calculation
 ```python
-cinei.emis_union(
-    species            = 'NMVOC',
-    ...
-    nmvoc_speciation   = True,   # auto-run after integration
-)
+import numpy as np
+
+lat = np.arange(10.125, 60, 0.25)
+lon = np.arange(70.125, 150, 0.25)
+lon_2d, lat_2d = np.meshgrid(lon, lat)
+area = cinei.ll_area(lat_2d, 0.25)
+print(f"Grid area shape: {area.shape}")
+print(f"Area range: {area.min():.1f} – {area.max():.1f} km²")
 ```
 
----
-
-## Bundled data files
-
-CINEI includes essential data files bundled with the package — no
-separate download required.
-
-| File | Description | Used for |
-|------|-------------|---------|
-| `Integrated_mapper.csv` | Species name mapping & unit conversion | `emis_union()` |
-| `country.shp` + `.dbf/.prj/.shx` | World country boundaries | China/region clipping |
-| `分省.shp` + related files | China province boundaries | Taiwan exclusion |
-| `all_species_fraction.csv` | VOC speciation fractions by sector | `nmvoc_speciation()` |
-| `mapping species to lumps.csv` | MOZART lumped species mapping | `nmvoc_speciation()` |
-
-These files are automatically used as defaults — you do not need to
-specify their paths unless you want to use custom versions:
+## Full example (minimal)
 ```python
-# Default — uses bundled files automatically
-cinei.emis_union(species='SO2', ...)
+import cinei
 
-# Custom mapper — override bundled default
-cinei.emis_union(
-    species      = 'SO2',
-    mapper_path  = '/my/custom/mapper.csv',
-    country_shp  = '/my/custom/country.shp',
-    province_shp = '/my/custom/province.shp',
-    ...
+# One-liner integration with all defaults
+output = cinei.emis_union(
+    species   = 'NMVOC',
+    month     = 1,
+    year      = 2017,
+    outer_dir = '/work/bb1554/data/CEDS',
+    inner_dir = '/work/bb1554/data/MEIC',
+    save_dir  = '/work/bb1554/output',
+    agg_dir   = '/work/bb1554/data/HTAP',
+    region    = 'China',
 )
 
-# Access bundled file paths directly
-print(cinei.get_mapper_path())
-print(cinei.get_country_shp())
-print(cinei.get_province_shp())
-print(cinei.get_data_path('all_species_fraction.csv'))
-```
-
-### Get bundled files from GitHub
-
-All bundled data files are available in the CINEI GitHub repository:
-```
-https://github.com/Luyikeka/cinei/tree/main/cinei/data/
-```
-
-To download individually:
-```bash
-# Clone the repository
-git clone https://github.com/Luyikeka/cinei.git
-
-# Data files are in:
-ls cinei/cinei/data/
-```
-
-Or install via pip to get all bundled files automatically:
-```bash
-pip install cinei
-python -c "import cinei; print(cinei.get_mapper_path())"
+# Plot all sectors
+cinei.cinei_plot(output, save_path='/work/bb1554/output/sectors.png')
 ```
