@@ -393,11 +393,31 @@ def emis_union(species, month, year,
         alldoshp = ds_agg['shipping'].values
         all_avi  = ds_agg['aviation'].values
         doagr    = ds_agg['agriculture'].values
-        ds_agg.rio.write_crs("epsg:4326", inplace=True)
-        agg_clipped = ds_agg.rio.clip(
-            mChina.geometry, mChina.crs, drop=False, invert=True)
-        doagr_clip = np.nan_to_num(agg_clipped['agriculture'].values, nan=0)
-        dms_agr    = doagr - doagr_clip[::-1]
+        # Clip agriculture to outside China using manual masking
+        # (avoids rioxarray x/y dim requirement)
+        from rasterio.features import geometry_mask
+        from rasterio.transform import from_bounds
+        import affine
+
+        lon_out = ds_agg.lon.values
+        lat_out = ds_agg.lat.values
+        n_lat_  = len(lat_out)
+        n_lon_  = len(lon_out)
+
+        res_ = float(lon_out[1] - lon_out[0]) if len(lon_out) > 1 else output_res
+        transform_ = from_bounds(
+            lon_out[0] - res_/2, lat_out[0] - res_/2,
+            lon_out[-1] + res_/2, lat_out[-1] + res_/2,
+            n_lon_, n_lat_
+        )
+        china_mask = geometry_mask(
+            mChina.geometry,
+            transform=transform_,
+            invert=True,
+            out_shape=(n_lat_, n_lon_)
+        )
+        doagr_clip = np.where(china_mask, doagr, 0.0)
+        dms_agr    = doagr - doagr_clip
     else:
         print(f"[CINEI] ⚠️  agg_dir not provided → "
               f"waste/shipping/aviation set to zero.")
@@ -411,6 +431,9 @@ def emis_union(species, month, year,
         inner_dir    = inner_dir,
         meic_spec    = meic_spec,
         mon_name     = mon_name,
+        mon_str      = mon_str,
+        month        = month,
+        year         = year,
         n_lat        = n_lat,
         n_lon        = n_lon,
         lon_arange   = lon_arange,
@@ -595,18 +618,35 @@ def _read_outer(outer_source, outer_dir, ceds_spec, meic_spec,
 
 
 def _read_inner(inner_source, inner_dir, meic_spec, mon_name,
+                mon_str, month, year,
                 n_lat, n_lon, lon_arange, lat_arange, mon_id):
     """Read inner (regional) inventory sectors."""
 
     zeros = np.zeros((n_lat, n_lon), dtype='float32')
 
     if inner_source == 'MEIC':
-        inner_spec = 'PM10' if meic_spec == 'PMcoarse' else meic_spec
-        pattern    = f'*_{mon_name}_*_{inner_spec}.*'
+        inner_spec     = 'PM10' if meic_spec == 'PMcoarse' else meic_spec
+        meic_file_spec = 'VOC' if inner_spec.upper() == 'NMVOC' else inner_spec
+        files_in_dir   = os.listdir(inner_dir)
+
+        # Support multiple filename formats:
+        # Format A: 2017_01_agriculture_VOC.nc  (zero-padded month)
+        # Format B: 2017_1_agriculture_VOC.nc   (plain integer month)
+        # Format C: agr_Jan_2017_VOC.nc         (month name)
+        pattern_a = f'{year}_{mon_str}_*_{meic_file_spec}.nc'
+        pattern_b = f'{year}_{month}_*_{meic_file_spec}.nc'
+        pattern_c = f'*_{mon_name}_*_{meic_file_spec}.*'
+
+        if fnmatch.filter(files_in_dir, pattern_a):
+            pattern = pattern_a
+        elif fnmatch.filter(files_in_dir, pattern_b):
+            pattern = pattern_b
+        else:
+            pattern = pattern_c
 
         def _load(sector_pattern):
             matches = fnmatch.filter(
-                fnmatch.filter(os.listdir(inner_dir), pattern),
+                fnmatch.filter(files_in_dir, pattern),
                 sector_pattern)
             if not matches:
                 print(f"[CINEI] ⚠️  MEIC sector not found: {sector_pattern}"
