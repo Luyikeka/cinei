@@ -14,13 +14,13 @@ import cinei
 
 # Download CEDS NMVOC
 cinei.download_ceds(
-    save_dir='/work/bb1554/data/CEDS',
+    save_dir='/work/b123456/data/CEDS',
     species=['NMVOC']
 )
 
 # Download HTAP NMVOC January 2017
 cinei.download_htap_monthly(
-    save_dir='/work/bb1554/data/HTAP',
+    save_dir='/work/b123456/data/HTAP',
     species=['NMVOC'],
     year=2017,
     month=1,
@@ -29,7 +29,7 @@ cinei.download_htap_monthly(
 
 # Download MEIC sample data
 cinei.download_meic_sample(
-    save_dir='/work/bb1554/data/MEIC',
+    save_dir='/work/b123456/data/MEIC',
     months=['jan']
 )
 ```
@@ -37,7 +37,7 @@ cinei.download_meic_sample(
 ## Step 3: Check MEIC files
 ```python
 result = cinei.check_meic_files(
-    meic_dir='/work/bb1554/data/MEIC',
+    meic_dir='/work/b123456/data/MEIC',
     year=2017,
     species=['NMVOC'],
     months=[1]
@@ -51,10 +51,10 @@ output = cinei.emis_union(
     species  = 'NMVOC',
     month    = 1,
     year     = 2017,
-    outer_dir= '/work/bb1554/data/CEDS',
-    inner_dir= '/work/bb1554/data/MEIC',
-    save_dir = '/work/bb1554/output/cinei',
-    agg_dir  = '/work/bb1554/data/HTAP',
+    outer_dir= '/work/b123456/data/CEDS',
+    inner_dir= '/work/b123456/data/MEIC',
+    save_dir = '/work/b123456/output/cinei',
+    agg_dir  = '/work/b123456/data/HTAP',
     region   = 'China',
     output_res = 0.25,
 )
@@ -83,7 +83,7 @@ to verify that regridding preserves total emissions:
 fig = cinei.cinei_plot(
     output,
     log_scale  = True,
-    save_path  = '/work/bb1554/output/cinei/CINEI_2017_Jan_NMVOC_sectors.png'
+    save_path  = '/work/b123456/output/cinei/CINEI_2017_Jan_NMVOC_sectors.png'
 )
 ```
 
@@ -100,7 +100,7 @@ each with their emission totals in the title.
 # Disaggregate total NMVOC into lumped model species
 speciated_files = cinei.nmvoc_speciation(
     nmvoc_nc_path = output,
-    save_dir      = '/work/bb1554/output/cinei/voc_speciated/',
+    save_dir      = '/work/b123456/output/cinei/voc_speciated/',
 )
 
 print(f"Generated {len(speciated_files)} speciated files")
@@ -121,7 +121,7 @@ CINEI_2017_Jan_CH2O_0p25deg_China.nc
 ```python
     cinei.nmvoc_speciation(
         nmvoc_nc_path = output,
-        save_dir      = '/work/bb1554/output/voc_speciated/',
+        save_dir      = '/work/b123456/output/voc_speciated/',
         sectors       = ['energy', 'transportation', 'industry']
     )
 ```
@@ -147,13 +147,13 @@ output = cinei.emis_union(
     species   = 'NMVOC',
     month     = 1,
     year      = 2017,
-    outer_dir = '/work/bb1554/data/CEDS',
-    inner_dir = '/work/bb1554/data/MEIC',
-    save_dir  = '/work/bb1554/output',
-    agg_dir   = '/work/bb1554/data/HTAP',
+    outer_dir = '/work/b123456/data/CEDS',
+    inner_dir = '/work/b123456/data/MEIC',
+    save_dir  = '/work/b123456/output',
+    agg_dir   = '/work/b123456/data/HTAP',
     region    = 'China',
 )
 
 # Plot all sectors
-cinei.cinei_plot(output, save_path='/work/bb1554/output/sectors.png')
+cinei.cinei_plot(output, save_path='/work/b123456/output/sectors.png')
 ```

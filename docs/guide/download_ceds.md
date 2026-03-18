@@ -28,18 +28,18 @@ import cinei
 
 # Download CO only (recommended for testing)
 cinei.download_ceds(
-    save_dir='/work/bb1554/data/CEDS',
+    save_dir='/work/b123456/data/CEDS',
     species=['CO']
 )
 
 # Download multiple species
 cinei.download_ceds(
-    save_dir='/work/bb1554/data/CEDS',
+    save_dir='/work/b123456/data/CEDS',
     species=['CO', 'NOx', 'SO2']
 )
 
 # Download all species (warning: large file ~200 GB)
-cinei.download_ceds(save_dir='/work/bb1554/data/CEDS')
+cinei.download_ceds(save_dir='/work/b123456/data/CEDS')
 ```
 
 !!! note

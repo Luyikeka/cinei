@@ -13,13 +13,13 @@ import cinei
 
 # Download both sample months
 cinei.download_meic_sample(
-    save_dir='/work/bb1554/data/MEIC',
+    save_dir='/work/b123456/data/MEIC',
     months=['jan', 'jul']
 )
 
 # Download January only
 cinei.download_meic_sample(
-    save_dir='/work/bb1554/data/MEIC',
+    save_dir='/work/b123456/data/MEIC',
     months=['jan']
 )
 ```
@@ -46,7 +46,7 @@ cinei.list_meic_filenames(2017, species=['NOx', 'SO2'], months=[1, 7])
 
 # Check which files are present/missing
 result = cinei.check_meic_files(
-    meic_dir='/work/bb1554/data/MEIC/2017',
+    meic_dir='/work/b123456/data/MEIC/2017',
     year=2017,
     species=['NOx', 'SO2']
 )

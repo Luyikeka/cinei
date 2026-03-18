@@ -13,7 +13,7 @@ CINEI provides built-in download functions for all supported emission inventorie
 
 ## Recommended directory structure
 ```
-/work/bb1554/data/
+/work/b123456/data/
 ├── CEDS/                  # CEDS NetCDF files
 ├── MEIC/
 │   └── 2017/              # MEIC monthly files by year

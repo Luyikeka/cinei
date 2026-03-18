@@ -18,14 +18,14 @@ cinei.list_edgar_species()
 
 # Download NOx and SO2 for 2017
 cinei.download_edgar(
-    save_dir='/work/bb1554/data/EDGAR',
+    save_dir='/work/b123456/data/EDGAR',
     species=['NOx', 'SO2'],
     years=[2017]
 )
 
 # Download multiple years
 cinei.download_edgar(
-    save_dir='/work/bb1554/data/EDGAR',
+    save_dir='/work/b123456/data/EDGAR',
     species=['NOx'],
     years=list(range(2013, 2021))
 )
@@ -35,7 +35,7 @@ cinei.download_edgar(
 ```python
 # Download NOx for January 2017 only
 cinei.download_edgar_monthly(
-    save_dir='/work/bb1554/data/EDGAR',
+    save_dir='/work/b123456/data/EDGAR',
     species=['NOx'],
     year=2017,
     month=1

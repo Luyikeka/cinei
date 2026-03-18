@@ -16,7 +16,7 @@ Understanding each argument once lets you use any inventory download function.
 **Required.** Directory where files will be saved.
 Created automatically if it does not exist.
 ```python
-save_dir = '/work/bb1554/data/HTAP'          # DKRZ
+save_dir = '/work/b123456/data/HTAP'          # DKRZ
 save_dir = '/mnt/hgfs/seafile/testdata/HTAP' # local VM
 ```
 
@@ -149,7 +149,7 @@ Global gridded anthropogenic emissions at 0.5°, monthly, 1750–2019.
 import cinei
 
 cinei.download_ceds(
-    save_dir = '/work/bb1554/data/CEDS',
+    save_dir = '/work/b123456/data/CEDS',
     species  = ['NMVOC', 'NOx', 'SO2'],
     keep_tar = False,
 )
@@ -165,13 +165,13 @@ Sample data (2017 Jan & Jul) publicly available on Zenodo.
 ```python
 # Download sample data
 cinei.download_meic_sample(
-    save_dir = '/work/bb1554/data/MEIC',
+    save_dir = '/work/b123456/data/MEIC',
     months   = ['jan', 'jul'],
 )
 
 # Check which files are present
 cinei.check_meic_files(
-    meic_dir = '/work/bb1554/data/MEIC/2017',
+    meic_dir = '/work/b123456/data/MEIC/2017',
     year     = 2017,
     species  = ['NOx', 'SO2'],
 )
@@ -189,7 +189,7 @@ Global gridded emissions at 0.1°, monthly, 1970–2022.
 ```python
 # Download full year
 cinei.download_edgar(
-    save_dir  = '/work/bb1554/data/EDGAR',
+    save_dir  = '/work/b123456/data/EDGAR',
     species   = ['NOx', 'SO2'],
     years     = [2017],
     data_type = 'fluxes',
@@ -197,7 +197,7 @@ cinei.download_edgar(
 
 # Download specific month only
 cinei.download_edgar_monthly(
-    save_dir  = '/work/bb1554/data/EDGAR',
+    save_dir  = '/work/b123456/data/EDGAR',
     species   = ['NOx'],
     year      = 2017,
     month     = 1,
@@ -216,7 +216,7 @@ cinei.list_htap_files(resolution='05x05', data_type='emissions')
 
 # Download full dataset (all years 2000–2018)
 cinei.download_htap(
-    save_dir   = '/work/bb1554/data/HTAP',
+    save_dir   = '/work/b123456/data/HTAP',
     species    = ['NMVOC', 'NOx', 'SO2'],
     resolution = '05x05',
     data_type  = 'emissions',
@@ -226,7 +226,7 @@ cinei.download_htap(
 
 # Download one specific month
 cinei.download_htap_monthly(
-    save_dir    = '/work/bb1554/data/HTAP',
+    save_dir    = '/work/b123456/data/HTAP',
     species     = ['NMVOC'],
     year        = 2017,
     month       = 1,
@@ -257,7 +257,7 @@ Output:
 **Step 2 — Download January 2017:**
 ```python
 cinei.download_htap_monthly(
-    save_dir    = '/work/bb1554/data/HTAP',
+    save_dir    = '/work/b123456/data/HTAP',
     species     = ['NMVOC'],
     year        = 2017,
     month       = 1,
@@ -270,7 +270,7 @@ cinei.download_htap_monthly(
 **Step 3 — Reuse annual file to extract another month:**
 ```python
 cinei.download_htap_monthly(
-    save_dir    = '/work/bb1554/data/HTAP',
+    save_dir    = '/work/b123456/data/HTAP',
     species     = ['NMVOC'],
     year        = 2017,
     month       = 7,
@@ -281,7 +281,7 @@ cinei.download_htap_monthly(
 
 **Output files:**
 ```
-/work/bb1554/data/HTAP/
+/work/b123456/data/HTAP/
 ├── gridmaps_05x05_emissions_NMVOC/
 │   └── edgar_HTAPv3_2017_NMVOC.nc     ← annual file (if keep_annual=True)
 ├── HTAP_v3_NMVOC_05x05_2017_01_Jan_emissions.nc   ← monthly [lat, lon]
