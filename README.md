@@ -3,7 +3,7 @@
 [![PyPI version](https://badge.fury.io/py/cinei.svg)](https://badge.fury.io/py/cinei)
 [![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.15000795.svg)](https://doi.org/10.5281/zenodo.15000795)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Documentation](https://img.shields.io/badge/docs-luyikeka.github.io/cinei-blue)](https://luyikeka.github.io/cinei/)
+[![Documentation](https://img.shields.io/badge/docs-luyikeka.github.io/cinei-blueviolet)](https://luyikeka.github.io/cinei/)
 
 📖 **Full documentation: [https://luyikeka.github.io/cinei/](https://luyikeka.github.io/cinei/)**
 
@@ -11,48 +11,144 @@
 
 ## Overview
 
-**CINEI** is a Python package for integrating anthropogenic emission inventories, combining global (e.g. CEDS) and regional (e.g. MEIC for China) datasets into a unified temporal and spatial resolution NetCDF product.
+**CINEI** is a Python package for integrating anthropogenic emission
+inventories, combining global (e.g. CEDS) and regional (e.g. MEIC for China)
+datasets into a unified temporal and spatial resolution NetCDF product.
+
+CINEI is dedicated to coupling and integrating anthropogenic emission
+inventories toward:
+- **Complete sectoral coverage** — energy, residential, industry,
+  agriculture, transportation, waste, shipping, aviation
+- **Finer spatial resolution** — from global 0.5° to regional 0.25° or finer
+- **Consistent NMVOC speciation** — disaggregation into lumped model species
+  (MOZART/SAPRC99 mechanisms)
+
+The outputs are designed for use in atmospheric chemistry simulations,
+climate change impact studies, and multi-disciplinary environmental research.
+
+---
 
 ## Installation
 ```bash
 pip install cinei
 ```
 
+---
+
 ## Quick Start
 ```python
 import cinei
 
-# Download CEDS CO data
-cinei.download_ceds(save_dir='/data/CEDS', species=['CO'])
+# 1. Download input data
+cinei.download_ceds(save_dir='/data/CEDS', species=['NMVOC'])
+cinei.download_htap_monthly(
+    save_dir='/data/HTAP', species=['NMVOC'], year=2017, month=1)
+cinei.download_meic_sample(save_dir='/data/MEIC', months=['jan'])
 
-# Download EDGAR NOx for 2017
-cinei.download_edgar(save_dir='/data/EDGAR', species=['NOx'], years=[2017])
-
-# Run emission integration
-cinei.emis_union(
-    ceds_dir='/data/CEDS',
-    meic_dir='/data/MEIC/2017',
-    save_dir='/data/output',
-    spec_ceds='NOx', spec_meic='NOx',
-    mon='Jan', mon_id=0, mon_agg='01', year='2017',
-    mapper_path='/data/Integrated_mapper.csv',
-    country_shp='/data/shapefiles/country.shp',
-    province_shp='/data/shapefiles/province.shp',
-    agg_dir='/data/agg_sectors'
+# 2. Run emission integration
+output = cinei.emis_union(
+    species   = 'NMVOC',     # target species (auto-mapped across inventories)
+    month     = 1,           # month as integer 1-12
+    year      = 2017,        # target year
+    outer_dir = '/data/CEDS',  # global background inventory (CEDS)
+    inner_dir = '/data/MEIC',  # regional inventory (MEIC for China)
+    save_dir  = '/data/output',
+    agg_dir   = '/data/HTAP',  # aggregated sectors (waste/shipping/aviation)
+    region    = 'China',     # region of interest
+    output_res= 0.25,        # output resolution in degrees
 )
+
+# 3. Plot all sectors
+cinei.cinei_plot(output, save_path='/data/output/sectors.png')
+
+# 4. Optional: NMVOC speciation into lumped model species
+cinei.nmvoc_speciation(nmvoc_nc_path=output, save_dir='/data/output/voc/')
 ```
 
-## Documentation
+---
 
-Full documentation including installation guide, API reference, data download guide,
-and tutorials is available at:
+## Key Functions
 
-**[https://luyikeka.github.io/cinei/](https://luyikeka.github.io/cinei/)**
+| Function | Description |
+|----------|-------------|
+| `emis_union()` | Core integration: merge outer + inner inventories |
+| `cinei_plot()` | Plot all 8 sectors + sum in one figure |
+| `download_ceds()` | Download CEDS v2021 gridded data |
+| `download_htap()` / `download_htap_monthly()` | Download HTAP v3 data |
+| `download_edgar()` / `download_edgar_monthly()` | Download EDGAR v8.1 data |
+| `download_meic_sample()` | Download MEIC 2017 sample data |
+| `nmvoc_speciation()` | Disaggregate NMVOC into lumped model species |
+| `check_user_data()` | Diagnose user-provided emission files |
+| `standardize_netcdf()` | Standardize NetCDF to CINEI format |
+| `list_regions()` | Show supported region presets |
+
+### `emis_union()` argument reference
+
+| Argument | Type | Description |
+|----------|------|-------------|
+| `species` | str | Species name, case-insensitive. e.g. `'NMVOC'`, `'SO2'`, `'NOx'` |
+| `month` | int or str | Month as integer (1-12), `'01'`, or `'Jan'` |
+| `year` | int or str | Target year, e.g. `2017` |
+| `outer_dir` | str | Directory of global background inventory (CEDS/EDGAR/HTAP/user) |
+| `inner_dir` | str | Directory of regional inventory (MEIC/user/EDGAR/HTAP) |
+| `save_dir` | str | Output directory |
+| `outer_source` | str | Outer inventory type: `'CEDS'`, `'EDGAR'`, `'HTAP'`, `'user'` |
+| `inner_source` | str | Inner inventory type: `'MEIC'`, `'user'`, `'EDGAR'`, `'HTAP'` |
+| `agg_dir` | str | Directory for HTAP aggregated sectors (waste/shipping/aviation) |
+| `mapper_path` | str | Path to species mapper CSV. Default: bundled |
+| `country_shp` | str | Path to country shapefile. Default: bundled |
+| `province_shp` | str | Path to province shapefile. Default: bundled |
+| `output_res` | float | Output resolution: `0.05`, `0.1`, `0.25`, `0.5` |
+| `sectors` | list or `'all'` | Sectors to integrate. Default: all 8 sectors |
+| `region` | str | Region name: `'China'`, `'Beijing'`, `'NCP'`, `'Germany'`, etc. |
+| `global_domain` | bool | If `True`, use global extent |
+| `lon_min/max` | float | Manual longitude bounds (when `region=None`) |
+| `lat_min/max` | float | Manual latitude bounds (when `region=None`) |
+| `nmvoc_speciation` | bool | If `True`, auto-run VOC speciation after integration |
+
+---
+
+## Supported Inventories
+
+| Inventory | Version | Resolution | Coverage |
+|-----------|---------|------------|----------|
+| CEDS | v_2021_04_21 | 0.5° | Global, 1750–2019 |
+| MEIC | v1.4 | 0.25° | China, monthly |
+| HTAP | v3 | 0.1° / 0.5° | Global, 2000–2018 |
+| EDGAR | v8.1 | 0.1° | Global, 1970–2022 |
+
+---
 
 ## Citation
+
+If you use CINEI in your research, please cite:
 ```
 Zhang, Y.: CINEI V1.1, https://doi.org/10.5281/zenodo.15000795, 2025.
 ```
+
+---
+
+## Author
+
+**Yijuan Zhang, PhD candidate**
+Institute of Environmental Physics (IUP), University of Bremen
+and Max Planck Institute for Meteorology (MPI-M), Hamburg, Germany
+
+---
+
+## Acknowledgements
+
+The development of CINEI was supported by computing resources provided by:
+
+**Deutsches Klimarechenzentrum (DKRZ)**
+*(German Climate Computing Centre)*
+Project allocation: b123456
+
+DKRZ provides high-performance computing infrastructure for climate and
+earth system research in Germany and is a key facility for the German
+climate research community.
+
+---
 
 ## License
 
