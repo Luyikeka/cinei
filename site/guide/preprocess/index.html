@@ -12,13 +12,13 @@
         <meta name="author" content="Yijuan Zhang">
       
       
-        <link rel="canonical" href="https://luyikeka.github.io/cinei/guide/download_ceds/">
+        <link rel="canonical" href="https://luyikeka.github.io/cinei/guide/preprocess/">
       
       
-        <link rel="prev" href="../data_overview/">
+        <link rel="prev" href="../download_edgar/">
       
       
-        <link rel="next" href="../download_meic/">
+        <link rel="next" href="../../tutorial/basic_workflow/">
       
       
         
@@ -29,7 +29,7 @@
     
     
       
-        <title>CEDS - CINEI Documentation</title>
+        <title>Preprocessing - CINEI Documentation</title>
       
     
     
@@ -82,7 +82,7 @@
     <div data-md-component="skip">
       
         
-        <a href="#ceds-data-download" class="md-skip">
+        <a href="#data-preprocessing" class="md-skip">
           Skip to content
         </a>
       
@@ -116,7 +116,7 @@
         <div class="md-header__topic" data-md-component="header-topic">
           <span class="md-ellipsis">
             
-              CEDS
+              Preprocessing
             
           </span>
         </div>
@@ -264,12 +264,10 @@
   
   
   
-    
-  
   
     
     
-      <li class="md-tabs__item md-tabs__item--active">
+      <li class="md-tabs__item">
         <a href="../data_overview/" class="md-tabs__link">
           
   
@@ -286,9 +284,11 @@
   
   
   
+    
   
-    <li class="md-tabs__item">
-      <a href="../preprocess/" class="md-tabs__link">
+  
+    <li class="md-tabs__item md-tabs__item--active">
+      <a href="./" class="md-tabs__link">
         
   
   
@@ -532,31 +532,26 @@
       
   
   
-    
   
   
-  
     
     
     
     
-      
-        
-        
       
       
         
       
     
     
-    <li class="md-nav__item md-nav__item--active md-nav__item--section md-nav__item--nested">
+    <li class="md-nav__item md-nav__item--nested">
       
         
         
-        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" checked>
+        <input class="md-nav__toggle md-toggle " type="checkbox" id="__nav_3" >
         
           
-          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="">
+          <label class="md-nav__link" for="__nav_3" id="__nav_3_label" tabindex="0">
             
   
   
@@ -574,7 +569,7 @@
             <span class="md-nav__icon md-icon"></span>
           </label>
         
-        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="true">
+        <nav class="md-nav" data-md-level="1" aria-labelledby="__nav_3_label" aria-expanded="false">
           <label class="md-nav__title" for="__nav_3">
             <span class="md-nav__icon md-icon"></span>
             
@@ -617,37 +612,10 @@
                 
   
   
-    
   
   
-  
-    <li class="md-nav__item md-nav__item--active">
-      
-      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
-      
-      
-        
-      
-      
-        <label class="md-nav__link md-nav__link--active" for="__toc">
-          
-  
-  
-  <span class="md-ellipsis">
-    
-  
-    CEDS
-  
-
-    
-  </span>
-  
-  
-
-          <span class="md-nav__icon md-icon"></span>
-        </label>
-      
-      <a href="./" class="md-nav__link md-nav__link--active">
+    <li class="md-nav__item">
+      <a href="../download_ceds/" class="md-nav__link">
         
   
   
@@ -663,48 +631,6 @@
   
 
       </a>
-      
-        
-
-<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
-  
-  
-  
-    
-  
-  
-    <label class="md-nav__title" for="__toc">
-      <span class="md-nav__icon md-icon"></span>
-      Table of contents
-    </label>
-    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
-      
-        <li class="md-nav__item">
-  <a href="#available-species" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Available species
-      
-    </span>
-  </a>
-  
-</li>
-      
-        <li class="md-nav__item">
-  <a href="#download" class="md-nav__link">
-    <span class="md-ellipsis">
-      
-        Download
-      
-    </span>
-  </a>
-  
-</li>
-      
-    </ul>
-  
-</nav>
-      
     </li>
   
 
@@ -805,10 +731,37 @@
       
   
   
+    
   
   
-    <li class="md-nav__item">
-      <a href="../preprocess/" class="md-nav__link">
+  
+    <li class="md-nav__item md-nav__item--active">
+      
+      <input class="md-nav__toggle md-toggle" type="checkbox" id="__toc">
+      
+      
+        
+      
+      
+        <label class="md-nav__link md-nav__link--active" for="__toc">
+          
+  
+  
+  <span class="md-ellipsis">
+    
+  
+    Preprocessing
+  
+
+    
+  </span>
+  
+  
+
+          <span class="md-nav__icon md-icon"></span>
+        </label>
+      
+      <a href="./" class="md-nav__link md-nav__link--active">
         
   
   
@@ -824,6 +777,92 @@
   
 
       </a>
+      
+        
+
+<nav class="md-nav md-nav--secondary" aria-label="Table of contents">
+  
+  
+  
+    
+  
+  
+    <label class="md-nav__title" for="__toc">
+      <span class="md-nav__icon md-icon"></span>
+      Table of contents
+    </label>
+    <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
+      
+        <li class="md-nav__item">
+  <a href="#cinei-standard-format" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        CINEI Standard Format
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#required-sector-variables" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Required sector variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-check-your-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Check your data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-standardize-netcdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Standardize NetCDF
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-convert-txt-to-netcdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Convert txt to NetCDF
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accepted-sector-name-aliases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accepted sector name aliases
+      
+    </span>
+  </a>
+  
+</li>
+      
+    </ul>
+  
+</nav>
+      
     </li>
   
 
@@ -1141,10 +1180,10 @@
     <ul class="md-nav__list" data-md-component="toc" data-md-scrollfix>
       
         <li class="md-nav__item">
-  <a href="#available-species" class="md-nav__link">
+  <a href="#cinei-standard-format" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Available species
+        CINEI Standard Format
       
     </span>
   </a>
@@ -1152,10 +1191,54 @@
 </li>
       
         <li class="md-nav__item">
-  <a href="#download" class="md-nav__link">
+  <a href="#required-sector-variables" class="md-nav__link">
     <span class="md-ellipsis">
       
-        Download
+        Required sector variables
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-1-check-your-data" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 1: Check your data
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-2-standardize-netcdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 2: Standardize NetCDF
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#step-3-convert-txt-to-netcdf" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Step 3: Convert txt to NetCDF
+      
+    </span>
+  </a>
+  
+</li>
+      
+        <li class="md-nav__item">
+  <a href="#accepted-sector-name-aliases" class="md-nav__link">
+    <span class="md-ellipsis">
+      
+        Accepted sector name aliases
       
     </span>
   </a>
@@ -1182,96 +1265,221 @@
   
 
 
-<h1 id="ceds-data-download">CEDS Data Download</h1>
-<p><strong>CEDS v_2021_04_21</strong> — Community Emissions Data System<br />
-Global gridded anthropogenic emissions at 0.5°, monthly, 1750–2019.</p>
-<p><strong>Source:</strong> <a href="https://doi.org/10.25584/PNNLDataHub/1779095">PNNL DataHub</a></p>
-<h2 id="available-species">Available species</h2>
+<h1 id="data-preprocessing">Data Preprocessing</h1>
+<p>If you have your own emission data, CINEI provides tools to check and
+standardize it into the required format before integration.</p>
+<h2 id="cinei-standard-format">CINEI Standard Format</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cinei</span>
+<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a><span class="n">cinei</span><span class="o">.</span><span class="n">show_cinei_standard</span><span class="p">()</span>
+</code></pre></div>
 <table>
 <thead>
 <tr>
-<th>Species</th>
-<th>Description</th>
+<th>Property</th>
+<th>Requirement</th>
 </tr>
 </thead>
 <tbody>
 <tr>
-<td>SO2</td>
-<td>Sulfur dioxide</td>
+<td>Format</td>
+<td>NetCDF (.nc)</td>
 </tr>
 <tr>
-<td>NOx</td>
-<td>Nitrogen oxides</td>
+<td>Dimensions</td>
+<td><code>(month, lat, lon)</code></td>
 </tr>
 <tr>
-<td>CO</td>
-<td>Carbon monoxide</td>
+<td>Month</td>
+<td>integer 1–12</td>
 </tr>
 <tr>
-<td>BC</td>
-<td>Black carbon</td>
+<td>Units</td>
+<td>ton/grid/month</td>
 </tr>
 <tr>
-<td>OC</td>
-<td>Organic carbon</td>
-</tr>
-<tr>
-<td>NH3</td>
-<td>Ammonia</td>
-</tr>
-<tr>
-<td>NMVOC</td>
-<td>Non-methane VOCs</td>
-</tr>
-<tr>
-<td>CO2</td>
-<td>Carbon dioxide</td>
-</tr>
-<tr>
-<td>CH4</td>
-<td>Methane</td>
-</tr>
-<tr>
-<td>N2O</td>
-<td>Nitrous oxide</td>
-</tr>
-<tr>
-<td>PM2.5</td>
-<td>Fine particles</td>
-</tr>
-<tr>
-<td>PM10</td>
-<td>Coarse particles</td>
+<td>Resolution</td>
+<td>flexible (regridded to 0.25° in <code>emis_union</code>)</td>
 </tr>
 </tbody>
 </table>
-<h2 id="download">Download</h2>
-<div class="highlight"><pre><span></span><code><a id="__codelineno-0-1" name="__codelineno-0-1" href="#__codelineno-0-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cinei</span>
-<a id="__codelineno-0-2" name="__codelineno-0-2" href="#__codelineno-0-2"></a>
-<a id="__codelineno-0-3" name="__codelineno-0-3" href="#__codelineno-0-3"></a><span class="c1"># Download CO only (recommended for testing)</span>
-<a id="__codelineno-0-4" name="__codelineno-0-4" href="#__codelineno-0-4"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_ceds</span><span class="p">(</span>
-<a id="__codelineno-0-5" name="__codelineno-0-5" href="#__codelineno-0-5"></a>    <span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;/work/b123456/data/CEDS&#39;</span><span class="p">,</span>
-<a id="__codelineno-0-6" name="__codelineno-0-6" href="#__codelineno-0-6"></a>    <span class="n">species</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;CO&#39;</span><span class="p">]</span>
-<a id="__codelineno-0-7" name="__codelineno-0-7" href="#__codelineno-0-7"></a><span class="p">)</span>
-<a id="__codelineno-0-8" name="__codelineno-0-8" href="#__codelineno-0-8"></a>
-<a id="__codelineno-0-9" name="__codelineno-0-9" href="#__codelineno-0-9"></a><span class="c1"># Download multiple species</span>
-<a id="__codelineno-0-10" name="__codelineno-0-10" href="#__codelineno-0-10"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_ceds</span><span class="p">(</span>
-<a id="__codelineno-0-11" name="__codelineno-0-11" href="#__codelineno-0-11"></a>    <span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;/work/b123456/data/CEDS&#39;</span><span class="p">,</span>
-<a id="__codelineno-0-12" name="__codelineno-0-12" href="#__codelineno-0-12"></a>    <span class="n">species</span><span class="o">=</span><span class="p">[</span><span class="s1">&#39;CO&#39;</span><span class="p">,</span> <span class="s1">&#39;NOx&#39;</span><span class="p">,</span> <span class="s1">&#39;SO2&#39;</span><span class="p">]</span>
-<a id="__codelineno-0-13" name="__codelineno-0-13" href="#__codelineno-0-13"></a><span class="p">)</span>
-<a id="__codelineno-0-14" name="__codelineno-0-14" href="#__codelineno-0-14"></a>
-<a id="__codelineno-0-15" name="__codelineno-0-15" href="#__codelineno-0-15"></a><span class="c1"># Download all species (warning: large file ~200 GB)</span>
-<a id="__codelineno-0-16" name="__codelineno-0-16" href="#__codelineno-0-16"></a><span class="n">cinei</span><span class="o">.</span><span class="n">download_ceds</span><span class="p">(</span><span class="n">save_dir</span><span class="o">=</span><span class="s1">&#39;/work/b123456/data/CEDS&#39;</span><span class="p">)</span>
-</code></pre></div>
+<h2 id="required-sector-variables">Required sector variables</h2>
+<table>
+<thead>
+<tr>
+<th>CINEI variable</th>
+<th>CEDS input</th>
+<th>MEIC input</th>
+<th>HTAP/other</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>power</code></td>
+<td>energy</td>
+<td>power</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>residential</code></td>
+<td>residential + solvents</td>
+<td>residential</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>industry</code></td>
+<td>industrial</td>
+<td>industry</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>transportation</code></td>
+<td>transportation</td>
+<td>transportation</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>agriculture</code></td>
+<td>agriculture</td>
+<td>agriculture</td>
+<td>—</td>
+</tr>
+<tr>
+<td><code>shipping</code></td>
+<td>ships</td>
+<td>—</td>
+<td>shipping</td>
+</tr>
+<tr>
+<td><code>waste</code></td>
+<td>—</td>
+<td>—</td>
+<td>waste</td>
+</tr>
+<tr>
+<td><code>aviation</code></td>
+<td>—</td>
+<td>—</td>
+<td>aviation</td>
+</tr>
+<tr>
+<td><code>sum</code></td>
+<td>computed automatically</td>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
 <div class="admonition note">
 <p class="admonition-title">Note</p>
-<p>Species names are case-insensitive: <code>'NOx'</code>, <code>'nox'</code>, <code>'NOX'</code> all work.</p>
+<p><code>sum</code> does <strong>not</strong> include aviation — consistent with CINEI v1 methodology.</p>
 </div>
+<h2 id="step-1-check-your-data">Step 1: Check your data</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-1-1" name="__codelineno-1-1" href="#__codelineno-1-1"></a><span class="kn">import</span><span class="w"> </span><span class="nn">cinei</span>
+<a id="__codelineno-1-2" name="__codelineno-1-2" href="#__codelineno-1-2"></a>
+<a id="__codelineno-1-3" name="__codelineno-1-3" href="#__codelineno-1-3"></a><span class="c1"># Check a NetCDF file</span>
+<a id="__codelineno-1-4" name="__codelineno-1-4" href="#__codelineno-1-4"></a><span class="n">report</span> <span class="o">=</span> <span class="n">cinei</span><span class="o">.</span><span class="n">check_user_data</span><span class="p">(</span><span class="s1">&#39;/path/to/my_emission.nc&#39;</span><span class="p">)</span>
+<a id="__codelineno-1-5" name="__codelineno-1-5" href="#__codelineno-1-5"></a><span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">[</span><span class="s1">&#39;status&#39;</span><span class="p">])</span>   <span class="c1"># &#39;ok&#39;, &#39;warning&#39;, or &#39;error&#39;</span>
+<a id="__codelineno-1-6" name="__codelineno-1-6" href="#__codelineno-1-6"></a><span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">[</span><span class="s1">&#39;issues&#39;</span><span class="p">])</span>
+<a id="__codelineno-1-7" name="__codelineno-1-7" href="#__codelineno-1-7"></a><span class="nb">print</span><span class="p">(</span><span class="n">report</span><span class="p">[</span><span class="s1">&#39;suggestions&#39;</span><span class="p">])</span>
+<a id="__codelineno-1-8" name="__codelineno-1-8" href="#__codelineno-1-8"></a>
+<a id="__codelineno-1-9" name="__codelineno-1-9" href="#__codelineno-1-9"></a><span class="c1"># Check a txt/csv file</span>
+<a id="__codelineno-1-10" name="__codelineno-1-10" href="#__codelineno-1-10"></a><span class="n">report</span> <span class="o">=</span> <span class="n">cinei</span><span class="o">.</span><span class="n">check_user_data</span><span class="p">(</span><span class="s1">&#39;/path/to/my_emission.txt&#39;</span><span class="p">)</span>
+</code></pre></div>
+<h2 id="step-2-standardize-netcdf">Step 2: Standardize NetCDF</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-2-1" name="__codelineno-2-1" href="#__codelineno-2-1"></a><span class="c1"># Auto-standardize (fixes dims and sector names automatically)</span>
+<a id="__codelineno-2-2" name="__codelineno-2-2" href="#__codelineno-2-2"></a><span class="n">out</span> <span class="o">=</span> <span class="n">cinei</span><span class="o">.</span><span class="n">standardize_netcdf</span><span class="p">(</span><span class="s1">&#39;/path/to/my_emission.nc&#39;</span><span class="p">)</span>
+<a id="__codelineno-2-3" name="__codelineno-2-3" href="#__codelineno-2-3"></a>
+<a id="__codelineno-2-4" name="__codelineno-2-4" href="#__codelineno-2-4"></a><span class="c1"># With manual sector mapping (when auto-detection fails)</span>
+<a id="__codelineno-2-5" name="__codelineno-2-5" href="#__codelineno-2-5"></a><span class="n">out</span> <span class="o">=</span> <span class="n">cinei</span><span class="o">.</span><span class="n">standardize_netcdf</span><span class="p">(</span>
+<a id="__codelineno-2-6" name="__codelineno-2-6" href="#__codelineno-2-6"></a>    <span class="s1">&#39;/path/to/my_emission.nc&#39;</span><span class="p">,</span>
+<a id="__codelineno-2-7" name="__codelineno-2-7" href="#__codelineno-2-7"></a>    <span class="n">sector_mapping</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-2-8" name="__codelineno-2-8" href="#__codelineno-2-8"></a>        <span class="s1">&#39;agr_emis&#39;</span><span class="p">:</span>  <span class="s1">&#39;agriculture&#39;</span><span class="p">,</span>
+<a id="__codelineno-2-9" name="__codelineno-2-9" href="#__codelineno-2-9"></a>        <span class="s1">&#39;ind_emis&#39;</span><span class="p">:</span>  <span class="s1">&#39;industry&#39;</span><span class="p">,</span>
+<a id="__codelineno-2-10" name="__codelineno-2-10" href="#__codelineno-2-10"></a>        <span class="s1">&#39;pow_emis&#39;</span><span class="p">:</span>  <span class="s1">&#39;power&#39;</span><span class="p">,</span>
+<a id="__codelineno-2-11" name="__codelineno-2-11" href="#__codelineno-2-11"></a>        <span class="s1">&#39;res_emis&#39;</span><span class="p">:</span>  <span class="s1">&#39;residential&#39;</span><span class="p">,</span>
+<a id="__codelineno-2-12" name="__codelineno-2-12" href="#__codelineno-2-12"></a>        <span class="s1">&#39;tra_emis&#39;</span><span class="p">:</span>  <span class="s1">&#39;transportation&#39;</span><span class="p">,</span>
+<a id="__codelineno-2-13" name="__codelineno-2-13" href="#__codelineno-2-13"></a>        <span class="s1">&#39;shp_emis&#39;</span><span class="p">:</span>  <span class="s1">&#39;shipping&#39;</span><span class="p">,</span>
+<a id="__codelineno-2-14" name="__codelineno-2-14" href="#__codelineno-2-14"></a>    <span class="p">}</span>
+<a id="__codelineno-2-15" name="__codelineno-2-15" href="#__codelineno-2-15"></a><span class="p">)</span>
+</code></pre></div>
 <div class="admonition tip">
 <p class="admonition-title">Tip</p>
-<p>Download supports <strong>resume</strong> — if interrupted, re-run the same command
-to continue from where it stopped.</p>
+<p>Missing sectors are automatically filled with zeros.
+The <code>sum</code> variable is always recomputed from all available sectors.</p>
 </div>
+<h2 id="step-3-convert-txt-to-netcdf">Step 3: Convert txt to NetCDF</h2>
+<div class="highlight"><pre><span></span><code><a id="__codelineno-3-1" name="__codelineno-3-1" href="#__codelineno-3-1"></a><span class="c1"># Auto-convert (column names auto-detected)</span>
+<a id="__codelineno-3-2" name="__codelineno-3-2" href="#__codelineno-3-2"></a><span class="n">out</span> <span class="o">=</span> <span class="n">cinei</span><span class="o">.</span><span class="n">txt_to_netcdf</span><span class="p">(</span><span class="s1">&#39;/path/to/my_emission.txt&#39;</span><span class="p">)</span>
+<a id="__codelineno-3-3" name="__codelineno-3-3" href="#__codelineno-3-3"></a>
+<a id="__codelineno-3-4" name="__codelineno-3-4" href="#__codelineno-3-4"></a><span class="c1"># With manual column mapping</span>
+<a id="__codelineno-3-5" name="__codelineno-3-5" href="#__codelineno-3-5"></a><span class="n">out</span> <span class="o">=</span> <span class="n">cinei</span><span class="o">.</span><span class="n">txt_to_netcdf</span><span class="p">(</span>
+<a id="__codelineno-3-6" name="__codelineno-3-6" href="#__codelineno-3-6"></a>    <span class="s1">&#39;/path/to/my_emission.txt&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-7" name="__codelineno-3-7" href="#__codelineno-3-7"></a>    <span class="n">lat_col</span><span class="o">=</span><span class="s1">&#39;latitude&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-8" name="__codelineno-3-8" href="#__codelineno-3-8"></a>    <span class="n">lon_col</span><span class="o">=</span><span class="s1">&#39;longitude&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-9" name="__codelineno-3-9" href="#__codelineno-3-9"></a>    <span class="n">month_col</span><span class="o">=</span><span class="s1">&#39;mon&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-10" name="__codelineno-3-10" href="#__codelineno-3-10"></a>    <span class="n">sector_cols</span><span class="o">=</span><span class="p">{</span>
+<a id="__codelineno-3-11" name="__codelineno-3-11" href="#__codelineno-3-11"></a>        <span class="s1">&#39;agr&#39;</span><span class="p">:</span> <span class="s1">&#39;agriculture&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-12" name="__codelineno-3-12" href="#__codelineno-3-12"></a>        <span class="s1">&#39;ind&#39;</span><span class="p">:</span> <span class="s1">&#39;industry&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-13" name="__codelineno-3-13" href="#__codelineno-3-13"></a>        <span class="s1">&#39;pow&#39;</span><span class="p">:</span> <span class="s1">&#39;power&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-14" name="__codelineno-3-14" href="#__codelineno-3-14"></a>        <span class="s1">&#39;res&#39;</span><span class="p">:</span> <span class="s1">&#39;residential&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-15" name="__codelineno-3-15" href="#__codelineno-3-15"></a>        <span class="s1">&#39;tra&#39;</span><span class="p">:</span> <span class="s1">&#39;transportation&#39;</span><span class="p">,</span>
+<a id="__codelineno-3-16" name="__codelineno-3-16" href="#__codelineno-3-16"></a>    <span class="p">}</span>
+<a id="__codelineno-3-17" name="__codelineno-3-17" href="#__codelineno-3-17"></a><span class="p">)</span>
+</code></pre></div>
+<p>Expected txt format:
+<div class="highlight"><pre><span></span><code><a id="__codelineno-4-1" name="__codelineno-4-1" href="#__codelineno-4-1"></a>lat    lon     month  agr     ind     pow     res     tra
+<a id="__codelineno-4-2" name="__codelineno-4-2" href="#__codelineno-4-2"></a>10.05  70.05   1      0.12    0.45    0.33    0.21    0.67
+<a id="__codelineno-4-3" name="__codelineno-4-3" href="#__codelineno-4-3"></a>10.05  70.05   2      0.11    0.44    0.31    0.20    0.65
+<a id="__codelineno-4-4" name="__codelineno-4-4" href="#__codelineno-4-4"></a>...
+</code></pre></div></p>
+<h2 id="accepted-sector-name-aliases">Accepted sector name aliases</h2>
+<p>CINEI automatically maps common alternative names:</p>
+<table>
+<thead>
+<tr>
+<th>CINEI standard</th>
+<th>Accepted aliases</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><code>agriculture</code></td>
+<td>agr, agri, act, agricultural</td>
+</tr>
+<tr>
+<td><code>industry</code></td>
+<td>ind, idt, industrial, manufacturing</td>
+</tr>
+<tr>
+<td><code>power</code></td>
+<td>pwr, ene, energy, electricity</td>
+</tr>
+<tr>
+<td><code>residential</code></td>
+<td>res, rdt, domestic, household</td>
+</tr>
+<tr>
+<td><code>transportation</code></td>
+<td>tra, tpt, transport, road, traffic</td>
+</tr>
+<tr>
+<td><code>shipping</code></td>
+<td>shp, ship, marine</td>
+</tr>
+<tr>
+<td><code>waste</code></td>
+<td>wst, swd, solid_waste</td>
+</tr>
+<tr>
+<td><code>aviation</code></td>
+<td>avi, air, aircraft</td>
+</tr>
+<tr>
+<td><code>sum</code></td>
+<td>total, tot, all, anthro</td>
+</tr>
+</tbody>
+</table>
 
 
 

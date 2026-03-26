@@ -143,12 +143,78 @@ def _regrid_conservative(data, src_lat, src_lon,
     return result
 
 
+def _check_conservation(htap_file, mon_id, lat_mask, lon_mask,
+                        results, htap_vars):
+    """
+    Print conservation ratio table for regridded HTAP sectors.
+
+    Conservation ratio = sum(output at dst resolution) /
+                         sum(input at src resolution)
+    Expected: ~1.0 for all sectors.
+
+    Notes
+    -----
+    - aviation, waste, agriculture: ratio should be exactly 1.0
+    - shipping: ratio may be > 1.0 because emis_union also adds
+      CEDS international shipping outside China on top of HTAP
+      domestic shipping. The regridding ratio itself should be ~1.0.
+    """
+    if htap_file is None:
+        print("[CINEI] ⚠️  Conservation check skipped: HTAP file not found")
+        return
+
+    import xarray as xr
+    DS = xr.open_dataset(str(htap_file))
+
+    print(f"\n[CINEI] ── Regridding Conservation Check ────────────────")
+    print(f"[CINEI] {'Sector':<15} {'Src total':>12} "
+          f"{'Dst total':>12} {'Ratio':>8}  {'Status'}")
+    print(f"[CINEI] {'-'*60}")
+
+    for sector, var_name in htap_vars.items():
+        # Source total
+        if isinstance(var_name, list):
+            src_total = sum(
+                DS[v][mon_id].values[np.ix_(lat_mask, lon_mask)].sum()
+                for v in var_name if v in DS
+            )
+        else:
+            if var_name not in DS:
+                print(f"[CINEI] {sector:<15} {'N/A':>12} {'N/A':>12} "
+                      f"{'N/A':>8}  ⚠️  var not in HTAP")
+                continue
+            src_total = DS[var_name][mon_id].values[
+                np.ix_(lat_mask, lon_mask)].sum()
+
+        # Destination total
+        dst_total = results[sector].sum()
+
+        ratio  = dst_total / src_total if src_total > 0 else 0.0
+        status = "✅" if 0.99 <= ratio <= 1.01 else "⚠️"
+
+        # Special note for shipping
+        note = ""
+        if sector == "shipping":
+            note = "  (CEDS ships added separately in emis_union)"
+            status = "✅" if 0.99 <= ratio <= 1.01 else "ℹ️"
+
+        print(f"[CINEI] {sector:<15} {src_total:>12.2f} "
+              f"{dst_total:>12.2f} {ratio:>8.4f}  {status}{note}")
+
+    print(f"[CINEI] {'-'*60}")
+    print(f"[CINEI] Note: ratio=1.0 means total emissions are exactly")
+    print(f"[CINEI]       conserved from source to target resolution.")
+    print()
+    DS.close()
+
+
 def regrid_aggregation(mon_id, meic_spec, year,
                        ceds_dir, htap_dir, mapper_path,
                        output_res=0.25,
                        lon_min=70.0, lon_max=150.0,
                        lat_min=10.0, lat_max=60.0,
-                       method="linear"):
+                       method="linear",
+                       check_conservation=True):
     """
     Regrid and aggregate waste (CEDS), shipping and aviation (HTAP)
     sectors to the target output grid using scipy interpolation.
@@ -176,6 +242,11 @@ def regrid_aggregation(mon_id, meic_spec, year,
         Latitude range. Default: 10.0, 60.0.
     method : str, optional
         Interpolation method: 'linear' or 'nearest'. Default: 'linear'.
+    check_conservation : bool, optional
+        If True, print conservation ratio table after regridding.
+        Ratio = sum(output) / sum(input) — expected ~1.0 for all sectors.
+        Shipping may differ slightly (CEDS ships added in emis_union).
+        Default: True.
 
     Returns
     -------
@@ -290,13 +361,35 @@ def regrid_aggregation(mon_id, meic_spec, year,
               f"edgar_HTAPv3_{year}_{meic_spec}.nc")
         print(f"[CINEI]    Searched in: {htap_dir}")
 
+    # ── Conservation check ───────────────────────────────────────────
+    if check_conservation:
+        _check_conservation(
+            htap_file   = htap_file if htap_file.exists() else None,
+            mon_id      = mon_id,
+            lat_mask    = lat_mask if htap_file.exists() else None,
+            lon_mask    = lon_mask if htap_file.exists() else None,
+            results     = {
+                'aviation':    aviation,
+                'waste':       waste,
+                'agriculture': agr_htap,
+                'shipping':    shipping,
+            },
+            htap_vars   = {
+                'aviation':    'HTAPv3_2_1_Domestic_Aviation',
+                'waste':       'HTAPv3_7_Waste',
+                'agriculture': ['HTAPv3_8_2_Agriculture_livestock',
+                                'HTAPv3_8_3_Agriculture_crops'],
+                'shipping':    'HTAPv3_5_3_Domestic_shipping',
+            }
+        )
+
     # ── Build output Dataset ──────────────────────────────────────────
     ds = xr.Dataset(
         {
             "waste":       (("lat", "lon"), waste),
             "shipping":    (("lat", "lon"), shipping),
             "aviation":    (("lat", "lon"), aviation),
-            "agriculture": (("lat", "lon"), agr_htap),  # full domain, no clipping
+            "agriculture": (("lat", "lon"), agr_htap),
         },
         coords={'lon': lon_out, 'lat': lat_out}
     )
