@@ -1,2 +1,9 @@
 dist/
 PyPI-Recovery-Codes*.txt
+__pycache__/
+*.pyc
+.coverage
+coverage.xml
+.pytest_cache/
+*.egg-info/
+build/

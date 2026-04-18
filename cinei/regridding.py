@@ -95,54 +95,6 @@ def _regrid_conservative(data, src_lat, src_lon,
     return result
 
 
-def _regrid_conservative(data, src_lat, src_lon,
-                         dst_lat, dst_lon, dst_res):
-    """
-    Conservative regridding: sum source cells into destination cells.
-    Preserves total emissions (ton/month).
-
-    For HTAP data: all variables are ton/month at 0.1°.
-    Summing 0.1° cells → 0.25° cell preserves total.
-
-    Parameters
-    ----------
-    data : np.ndarray (n_src_lat, n_src_lon)
-        Source data in ton/month at source resolution.
-    src_lat, src_lon : 1D arrays
-        Source grid center coordinates (must be sorted ascending).
-    dst_lat, dst_lon : 1D arrays
-        Destination grid center coordinates.
-    dst_res : float
-        Destination resolution in degrees.
-
-    Returns
-    -------
-    np.ndarray (n_dst_lat, n_dst_lon)
-        Aggregated data in ton/month at destination resolution.
-    """
-    n_dst_lat = len(dst_lat)
-    n_dst_lon = len(dst_lon)
-    result    = np.zeros((n_dst_lat, n_dst_lon), dtype='float32')
-    half      = dst_res / 2.0
-
-    # Pre-compute source index ranges for each destination cell
-    for i, dlat in enumerate(dst_lat):
-        lat_idx = np.where(
-            (src_lat >= dlat - half) & (src_lat < dlat + half))[0]
-        if len(lat_idx) == 0:
-            continue
-        for j, dlon in enumerate(dst_lon):
-            lon_idx = np.where(
-                (src_lon >= dlon - half) & (src_lon < dlon + half))[0]
-            if len(lon_idx) == 0:
-                continue
-            result[i, j] = np.nansum(
-                data[lat_idx[0]:lat_idx[-1]+1,
-                     lon_idx[0]:lon_idx[-1]+1])
-
-    return result
-
-
 def _check_conservation(htap_file, mon_id, lat_mask, lon_mask,
                         results, htap_vars):
     """
