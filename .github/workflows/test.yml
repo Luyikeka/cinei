@@ -22,6 +22,9 @@ jobs:
         with:
           python-version: ${{ matrix.python-version }}
           cache: pip
+          cache-dependency-path: |
+            setup.py
+            requirements-dev.txt
 
       - name: Install system libraries for geospatial stack
         run: |
