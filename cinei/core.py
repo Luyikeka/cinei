@@ -508,19 +508,19 @@ def _read_outer(outer_source, outer_dir, ceds_spec, meic_spec,
         path  = os.path.join(outer_dir, fname)
         _check_path(path, f'CEDS file ({fname})')
 
-        ds       = rioxarray.open_rasterio(path, masked=True)
-        re_lat   = np.arange(ds.y.values.min(), ds.y.values.max(), output_res)
-        re_lon   = np.arange(ds.x.values.min(), ds.x.values.max(), output_res)
-        emis_all = ds.interp(y=re_lat, x=re_lon).isel(time=mon_id)
+        ds       = xr.open_dataset(path)
+        re_lat   = np.arange(ds.lat.values.min(), ds.lat.values.max(), output_res)
+        re_lon   = np.arange(ds.lon.values.min(), ds.lon.values.max(), output_res)
+        emis_all = ds.interp(lat=re_lat, lon=re_lon).isel(time=mon_id)
 
         # Check data covers region
         check_data_coverage(
-            float(ds.x.min()), float(ds.x.max()),
-            float(ds.y.min()), float(ds.y.max()),
+            float(ds.lon.min()), float(ds.lon.max()),
+            float(ds.lat.min()), float(ds.lat.max()),
             _lon_min, _lon_max, _lat_min, _lat_max,
             region_name
         )
-        return emis_all.sel(x=lon_arange, y=lat_arange, method="nearest")
+        return emis_all.sel(lon=lon_arange, lat=lat_arange, method="nearest")
 
     elif outer_source == 'EDGAR':
         # EDGAR: one nc per year, dims (time, lat, lon)
