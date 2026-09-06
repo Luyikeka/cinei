@@ -1,0 +1,106 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>CINEI v2.1 poster — iCACGP-IGAC 2026</title>
+<meta name="description" content="CINEI v2.1: a kilometre-scale global anthropogenic emission infrastructure for storm-resolving Earth system models. Poster 1-42, iCACGP-IGAC 2026, Heraklion.">
+<style>
+  :root{
+    --ink:#0F3A45;        /* poster header teal */
+    --panel:#F2F6F7;      /* poster panel off-white */
+    --mark:#E8912C;       /* poster section marker */
+    --muted:#9DBAC2;
+    --rule:rgba(255,255,255,.16);
+  }
+  *{box-sizing:border-box}
+  html{-webkit-text-size-adjust:100%}
+  body{
+    margin:0; background:var(--ink); color:#fff;
+    font-family:Arial,Helvetica,"Helvetica Neue",sans-serif;
+    line-height:1.5;
+  }
+  .wrap{max-width:62rem; margin:0 auto; padding:2.5rem 1.5rem 4rem}
+  h1{
+    font-size:clamp(1.5rem,4.6vw,2.4rem); line-height:1.2;
+    font-weight:700; margin:0 0 .5rem; max-width:22ch;
+  }
+  .sub{color:#CFE0E5; font-size:clamp(1rem,2.4vw,1.15rem); margin:0 0 1.6rem; max-width:46ch}
+  .byline{font-size:.95rem; color:var(--muted); margin:0 0 .35rem}
+  .venue{font-size:.95rem; color:var(--muted); margin:0}
+  .venue b{color:#fff; font-weight:700}
+
+  .cols{display:grid; gap:2.5rem; margin-top:2.5rem}
+  @media (min-width:52rem){ .cols{grid-template-columns:1fr 1fr; gap:3rem; align-items:start} }
+
+  a.sheet{display:block; text-decoration:none}
+  a.sheet img{
+    width:100%; height:auto; display:block; background:#fff;
+    border-radius:3px; box-shadow:0 1.25rem 3rem rgba(0,0,0,.45);
+  }
+  a.sheet:focus-visible{outline:3px solid var(--mark); outline-offset:6px}
+
+  .cta{
+    display:inline-block; background:var(--mark); color:#12222A;
+    font-weight:700; font-size:1.05rem; text-decoration:none;
+    padding:.85rem 1.4rem; border-radius:3px; margin:.25rem 0 1.75rem;
+  }
+  .cta:hover{background:#F2A345}
+  .cta:focus-visible{outline:3px solid #fff; outline-offset:3px}
+
+  /* the poster's orange square marker, reused as a section mark */
+  .note{
+    background:rgba(255,255,255,.06); border-left:4px solid var(--mark);
+    padding:1rem 1.15rem; border-radius:0 3px 3px 0; margin:0 0 1.75rem;
+    font-size:.98rem; color:#DCE9ED; max-width:48ch;
+  }
+  .note a{color:#fff}
+
+  dl{margin:0; border-top:1px solid var(--rule)}
+  .row{display:flex; flex-wrap:wrap; gap:.35rem 1rem; padding:.7rem 0; border-bottom:1px solid var(--rule)}
+  dt{flex:0 0 7.5rem; color:var(--muted); font-size:.9rem; margin:0}
+  dd{margin:0; font-size:.95rem; word-break:break-word}
+  dd a{color:#fff; text-decoration:underline; text-underline-offset:2px}
+  dd a:hover{color:var(--mark)}
+
+  footer{margin-top:2.5rem; color:var(--muted); font-size:.85rem}
+</style>
+</head>
+<body>
+<main class="wrap">
+
+  <h1>CINEI v2.1: a kilometer-scale global emission inventory for ozone precursors, serving next-generation climate models</h1>
+  <p class="sub">Transport-corrected satellite downscaling to 0.05°, and the first ICON–OEM tracer runs.</p>
+  <p class="byline">Yijuan Zhang — LAMOS, IUP Bremen · Environmental Modeling Group, MPI-M Hamburg</p>
+  <p class="venue">iCACGP-IGAC 2026, Heraklion · Poster <b>S1_P165</b></p>
+
+  <div class="cols">
+    <div>
+      <a class="sheet" href="poster.pdf">
+        <img src="poster-preview.jpg" alt="Preview of the CINEI v2.1 poster, A0 portrait, eight sections">
+      </a>
+    </div>
+
+    <div>
+      <a class="cta" href="poster.pdf">Open the poster (PDF, A0)</a>
+
+      <!-- Delete this block if you would rather not say you are absent. -->
+      <p class="note">I could not travel to Heraklion this year, so there is nobody at the board to
+      answer questions. Email me and I will reply — questions about the DDf source proxy, the ICON–OEM
+      coupling, or the Africa transfer are all very welcome.</p>
+
+      <dl>
+        <div class="row"><dt>Contact</dt><dd><a href="mailto:yijzhang@uni-bremen.de">yijzhang@uni-bremen.de</a></dd></div>
+        <div class="row"><dt>Method paper</dt><dd><a href="https://doi.org/10.5194/gmd-19-217-2026">CINEI v1.1 — GMD 19, 217, 2026</a></dd></div>
+        <div class="row"><dt>Data</dt><dd><a href="https://doi.org/10.1594/PANGAEA.974347">PANGAEA 974347</a></dd></div>
+        <div class="row"><dt>Package</dt><dd><a href="https://pypi.org/project/cinei">pypi.org/project/cinei</a></dd></div>
+        <div class="row"><dt>Docs</dt><dd><a href="https://luyikeka.github.io/cinei">luyikeka.github.io/cinei</a></dd></div>
+      </dl>
+
+      <footer>Computations on DKRZ Levante (bb1554) and Google Earth Engine (Partner Tier).</footer>
+    </div>
+  </div>
+
+</main>
+</body>
+</html>
